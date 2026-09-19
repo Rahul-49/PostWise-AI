@@ -44,4 +44,7 @@ const CalendarSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+CalendarSchema.index({ user: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Calendar', CalendarSchema);
+

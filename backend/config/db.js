@@ -8,20 +8,25 @@ const connectDB = async () => {
   try {
     mongoose.set('strictQuery', false);
     await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 3000,
+      serverSelectionTimeoutMS: 1500,
     });
     isConnected = true;
+    useMockStore = false;
     console.log(`[Database] MongoDB Connected successfully: ${mongoose.connection.host}`);
   } catch (error) {
-    console.warn(`[Database Warning] Could not connect to local MongoDB (${error.message}).`);
+    console.warn(`[Database Warning] Could not connect to MongoDB (${error.message}).`);
     console.warn(`[Database Mode] Operating in memory-mock fallback mode so all API endpoints function seamlessly.`);
+    isConnected = false;
     useMockStore = true;
   }
 };
 
-const getDBStatus = () => ({
-  isConnected,
-  useMockStore,
-});
+const getDBStatus = () => {
+  const ready = mongoose.connection.readyState === 1;
+  return {
+    isConnected: ready || isConnected,
+    useMockStore: !ready,
+  };
+};
 
 module.exports = { connectDB, getDBStatus };

@@ -93,4 +93,9 @@ PostSchema.virtual('brandId').get(function () {
 PostSchema.set('toJSON', { virtuals: true });
 PostSchema.set('toObject', { virtuals: true });
 
+PostSchema.index({ calendar: 1, date: 1 });
+PostSchema.index({ user: 1, date: 1 });
+PostSchema.index({ user: 1, platform: 1, date: 1 });
+
 module.exports = mongoose.model('Post', PostSchema);
+

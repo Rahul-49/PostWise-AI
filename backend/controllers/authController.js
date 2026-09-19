@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { getDBStatus } = require('../config/db');
+const logger = require('../utils/logger');
 
 // In-memory mock storage fallback
 const mockUsers = [];
@@ -39,6 +40,7 @@ exports.register = async (req, res) => {
       };
       mockUsers.push(newUser);
       const token = generateToken(newUser._id, newUser.email, newUser.name);
+      logger.info('Mock user registered successfully', { email: newUser.email });
       return res.status(201).json({
         message: 'Registration successful',
         token,
@@ -61,13 +63,14 @@ exports.register = async (req, res) => {
     });
 
     const token = generateToken(user._id, user.email, user.name);
+    logger.info('User registered successfully', { userId: user._id, email: user.email });
     return res.status(201).json({
       message: 'User registered successfully',
       token,
       user: { id: user._id, name: user.name, email: user.email, activeBrandId: user.activeBrandId },
     });
   } catch (error) {
-    console.error('Registration Error:', error);
+    logger.error('Registration Error', { error: error.message });
     return res.status(500).json({ message: 'Server error during registration', error: error.message });
   }
 };
@@ -91,6 +94,7 @@ exports.login = async (req, res) => {
         return res.status(400).json({ message: 'Invalid email or password' });
       }
       const token = generateToken(user._id, user.email, user.name);
+      logger.info('Mock user logged in', { email: user.email });
       return res.json({
         message: 'Login successful',
         token,
@@ -109,13 +113,14 @@ exports.login = async (req, res) => {
     }
 
     const token = generateToken(user._id, user.email, user.name);
+    logger.info('User logged in successfully', { userId: user._id, email: user.email });
     return res.json({
       message: 'Login successful',
       token,
       user: { id: user._id, name: user.name, email: user.email, activeBrandId: user.activeBrandId },
     });
   } catch (error) {
-    console.error('Login Error:', error);
+    logger.error('Login Error', { error: error.message });
     return res.status(500).json({ message: 'Server error during login', error: error.message });
   }
 };
@@ -139,6 +144,7 @@ exports.getMe = async (req, res) => {
     }
     return res.json({ user: { id: user._id, name: user.name, email: user.email, activeBrandId: user.activeBrandId } });
   } catch (error) {
+    logger.error('Error retrieving profile', { error: error.message });
     return res.status(500).json({ message: 'Server error retrieving profile' });
   }
 };
