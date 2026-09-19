@@ -32,6 +32,7 @@ Built with a **Node.js/Express** backend, **MongoDB (Mongoose)** with an automat
 - **Multiple Views**: Seamlessly switch between **Month Grid**, **Week View**, and **Agenda List**.
 - **Drag-and-Drop Rescheduling**: Move posts across calendar dates with smooth, instant state updates.
 - **Publish Status Control**: Track and toggle posts across `draft`, `scheduled`, and `published` states.
+- **Direct LinkedIn Publishing**: 1-click publishing of scheduled content directly to your live LinkedIn feed via LinkedIn REST Posts API (`/rest/posts`).
 
 ### 5. Brand Voice & Profile Management
 - **Brand Identity**: Define brand name, industry, target audience, tone of voice, platforms, keywords, description, and handles.
@@ -86,6 +87,10 @@ PEXELS_API=your_pexels_api_key_here
 | `GROQ_API` | Optional | Groq API key for LLaMA-3.3-70B calendar & post generation. |
 | `OPENAI_API_KEY` | Optional | OpenAI API key fallback if Groq is not configured. |
 | `PEXELS_API` | Optional | Pexels API key for stock photo discovery and carousel previews. |
+| `LINKEDIN_CLIENT_ID` | Optional | LinkedIn App Client ID for OAuth flow. |
+| `LINKEDIN_CLIENT_SECRET` | Optional | LinkedIn App Client Secret for OAuth token exchange. |
+| `LINKEDIN_REDIRECT_URI` | Optional | LinkedIn OAuth redirect URI (e.g. `http://localhost:5000/api/linkedin/auth/callback`). |
+| `LINKEDIN_ACCESS_TOKEN` | Optional | Direct LinkedIn OAuth access token for publishing posts directly to LinkedIn. |
 
 ---
 
@@ -132,6 +137,7 @@ All routes except `/api/auth/register`, `/api/auth/login`, and `/api/health` req
 | `POST` | `/api/posts/:id/regenerate` | Regenerate post copy with custom AI prompt | `{ "customInstruction": "Make it more casual" }` |
 | `PATCH` | `/api/posts/:id/reschedule` | Reschedule post date | `{ "date": "2026-10-15" }` |
 | `DELETE` | `/api/posts/:id` | Delete a single scheduled post | *None* |
+| `POST` | `/api/posts/:id/publish/linkedin` | Publish scheduled post directly to LinkedIn feed | *None* |
 
 ### 5. Media & Stock Photos (`/api/pexels`)
 

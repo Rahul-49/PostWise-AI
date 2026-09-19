@@ -22,8 +22,24 @@ const BrandSchema = new mongoose.Schema(
     },
     tone: {
       type: String,
-      enum: ['Professional', 'Witty & Fun', 'Inspirational', 'Educational', 'Bold & Direct', 'Casual'],
-      default: 'Professional',
+      default: 'Inspirational',
+    },
+    niche: {
+      type: String,
+      default: '',
+    },
+    postingGoals: {
+      type: String,
+      default: '',
+    },
+    handles: {
+      instagram: { type: String, default: '' },
+      linkedin: { type: String, default: '' },
+      twitter: { type: String, default: '' },
+    },
+    color: {
+      type: String,
+      default: '#4f46e5',
     },
     platforms: {
       type: [String],

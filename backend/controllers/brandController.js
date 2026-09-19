@@ -82,7 +82,20 @@ exports.getBrandById = async (req, res) => {
 exports.createBrand = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, industry, targetAudience, tone, platforms, keywords, description, website } = req.body;
+    const { 
+      name, 
+      industry, 
+      niche, 
+      targetAudience, 
+      tone, 
+      platforms, 
+      keywords, 
+      description, 
+      website, 
+      postingGoals, 
+      handles, 
+      color 
+    } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: 'Brand name is required' });
@@ -95,9 +108,13 @@ exports.createBrand = async (req, res) => {
         _id: 'mock_brand_' + Date.now(),
         user: userId,
         name,
-        industry: industry || 'General',
+        industry: industry || niche || 'General',
+        niche: niche || industry || '',
         targetAudience: targetAudience || 'General Audience',
-        tone: tone || 'Professional',
+        tone: tone || 'Inspirational',
+        postingGoals: postingGoals || '',
+        handles: handles || {},
+        color: color || '#4f46e5',
         platforms: Array.isArray(platforms) && platforms.length ? platforms : ['Instagram', 'LinkedIn', 'X/Twitter'],
         keywords: Array.isArray(keywords) ? keywords : (keywords ? keywords.split(',').map(k => k.trim()) : []),
         description: description || '',
@@ -116,9 +133,13 @@ exports.createBrand = async (req, res) => {
     const brand = await Brand.create({
       user: userId,
       name,
-      industry: industry || 'General',
+      industry: industry || niche || 'General',
+      niche: niche || industry || '',
       targetAudience: targetAudience || 'General Audience',
-      tone: tone || 'Professional',
+      tone: tone || 'Inspirational',
+      postingGoals: postingGoals || '',
+      handles: handles || {},
+      color: color || '#4f46e5',
       platforms: Array.isArray(platforms) && platforms.length ? platforms : ['Instagram', 'LinkedIn', 'X/Twitter'],
       keywords: formattedKeywords,
       description: description || '',
@@ -138,7 +159,20 @@ exports.updateBrand = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const { name, industry, targetAudience, tone, platforms, keywords, description, website } = req.body;
+    const { 
+      name, 
+      industry, 
+      niche, 
+      targetAudience, 
+      tone, 
+      platforms, 
+      keywords, 
+      description, 
+      website, 
+      postingGoals, 
+      handles, 
+      color 
+    } = req.body;
 
     const { useMockStore } = getDBStatus();
 
@@ -149,9 +183,13 @@ exports.updateBrand = async (req, res) => {
       mockBrands[index] = {
         ...mockBrands[index],
         name: name || mockBrands[index].name,
-        industry: industry || mockBrands[index].industry,
+        industry: industry || niche || mockBrands[index].industry,
+        niche: niche || industry || mockBrands[index].niche,
         targetAudience: targetAudience || mockBrands[index].targetAudience,
         tone: tone || mockBrands[index].tone,
+        postingGoals: postingGoals !== undefined ? postingGoals : mockBrands[index].postingGoals,
+        handles: handles || mockBrands[index].handles,
+        color: color || mockBrands[index].color,
         platforms: Array.isArray(platforms) ? platforms : mockBrands[index].platforms,
         keywords: Array.isArray(keywords) ? keywords : mockBrands[index].keywords,
         description: description !== undefined ? description : mockBrands[index].description,
@@ -165,8 +203,21 @@ exports.updateBrand = async (req, res) => {
       ? keywords
       : typeof keywords === 'string' ? keywords.split(',').map(k => k.trim()).filter(Boolean) : undefined;
 
-    const updateData = { name, industry, targetAudience, tone, platforms, description, website };
-    if (formattedKeywords) updateData.keywords = formattedKeywords;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (industry !== undefined || niche !== undefined) {
+      updateData.industry = industry || niche;
+      updateData.niche = niche || industry;
+    }
+    if (targetAudience !== undefined) updateData.targetAudience = targetAudience;
+    if (tone !== undefined) updateData.tone = tone;
+    if (platforms !== undefined) updateData.platforms = platforms;
+    if (description !== undefined) updateData.description = description;
+    if (website !== undefined) updateData.website = website;
+    if (postingGoals !== undefined) updateData.postingGoals = postingGoals;
+    if (handles !== undefined) updateData.handles = handles;
+    if (color !== undefined) updateData.color = color;
+    if (formattedKeywords !== undefined) updateData.keywords = formattedKeywords;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(404).json({ message: 'Brand profile not found' });

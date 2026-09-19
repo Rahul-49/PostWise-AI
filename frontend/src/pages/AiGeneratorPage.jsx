@@ -115,33 +115,33 @@ const AiGeneratorPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto flex flex-col gap-8 animate-fade-in">
-      {/* Header */}
-      <div className="text-center max-w-xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold mb-3 shadow-xs">
-          <Wand2 className="w-3.5 h-3.5 text-indigo-600" />
+      {/* Page Header */}
+      <div className="text-center max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 text-indigo-700 dark:text-indigo-400 text-xs font-bold mb-3 shadow-xs">
+          <Wand2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
           One-Click AI Strategy Engine
         </div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight font-display">
           Generate 30 Days of Tailored Social Content
         </h1>
-        <p className="text-xs md:text-sm text-slate-500 mt-2">
+        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
           Turn your brand identity into a full month of ready-to-publish posts across Instagram, LinkedIn, and X with zero creative block.
         </p>
       </div>
 
       {/* Generation Form Card */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8">
+      <div className="bg-white dark:bg-slate-900/80 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm p-6 sm:p-8 transition-colors backdrop-blur-xl">
         {!isGenerating ? (
           <form onSubmit={handleGenerate} className="flex flex-col gap-6">
             {/* 1. Target Brand */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                 1. Select Brand Persona
               </label>
               <select
                 value={selectedBrandId}
                 onChange={(e) => setSelectedBrandId(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs"
+                className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs"
               >
                 {brands && brands.map((b) => (
                   <option key={b._id} value={b._id}>
@@ -153,7 +153,7 @@ const AiGeneratorPage = () => {
 
             {/* 2. Campaign Objective */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                 2. Choose Campaign Pillar
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -165,17 +165,17 @@ const AiGeneratorPage = () => {
                       onClick={() => setCampaignId(preset.id)}
                       className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                         isSelected
-                          ? 'border-indigo-600 bg-indigo-50/60 shadow-xs ring-1 ring-indigo-500'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                          ? 'border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/60 shadow-xs ring-1 ring-indigo-500'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-800/60'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="font-bold text-xs text-slate-900">{preset.title}</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600">
+                        <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100">{preset.title}</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
                           {preset.badge}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 leading-relaxed">{preset.desc}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{preset.desc}</p>
                     </div>
                   );
                 })}
@@ -184,7 +184,7 @@ const AiGeneratorPage = () => {
 
             {/* Custom Angle */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                 3. Custom Focus Keyword or Campaign Goal (Optional)
               </label>
               <input
@@ -192,13 +192,13 @@ const AiGeneratorPage = () => {
                 value={customGoal}
                 onChange={(e) => setCustomGoal(e.target.value)}
                 placeholder="e.g. 3 posts per week on product launches, behind-the-scenes, and tips"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs"
               />
             </div>
 
             {/* 4. Target Platforms */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                 4. Select Active Platforms
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -206,25 +206,25 @@ const AiGeneratorPage = () => {
                   onClick={() => togglePlatform('Instagram')}
                   className={`p-4 rounded-2xl border text-center cursor-pointer transition-all ${
                     targetPlatforms.includes('Instagram')
-                      ? 'border-pink-500 bg-pink-50/50 shadow-xs'
-                      : 'border-slate-200 opacity-60'
+                      ? 'border-pink-500 bg-pink-50/50 dark:bg-pink-950/30 shadow-xs'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 opacity-60'
                   }`}
                 >
-                  <Instagram className="w-5 h-5 text-pink-600 mx-auto mb-1" />
-                  <div className="text-xs font-bold text-slate-900">Instagram</div>
-                  <div className="text-[10px] text-pink-600 font-semibold">Visuals & Emojis</div>
+                  <Instagram className="w-5 h-5 text-pink-600 dark:text-pink-400 mx-auto mb-1" />
+                  <div className="text-xs font-extrabold text-slate-900 dark:text-slate-100">Instagram</div>
+                  <div className="text-[10px] text-pink-600 dark:text-pink-400 font-semibold">Visuals & Emojis</div>
                 </div>
 
                 <div
                   onClick={() => togglePlatform('LinkedIn')}
                   className={`p-4 rounded-2xl border text-center cursor-pointer transition-all ${
                     targetPlatforms.includes('LinkedIn')
-                      ? 'border-[#0A66C2] bg-blue-50/50 shadow-xs'
-                      : 'border-slate-200 opacity-60'
+                      ? 'border-[#0A66C2] bg-blue-50/50 dark:bg-blue-950/30 shadow-xs'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 opacity-60'
                   }`}
                 >
                   <Linkedin className="w-5 h-5 text-[#0A66C2] mx-auto mb-1" />
-                  <div className="text-xs font-bold text-slate-900">LinkedIn</div>
+                  <div className="text-xs font-extrabold text-slate-900 dark:text-slate-100">LinkedIn</div>
                   <div className="text-[10px] text-[#0A66C2] font-semibold">Insights & ROI</div>
                 </div>
 
@@ -232,13 +232,13 @@ const AiGeneratorPage = () => {
                   onClick={() => togglePlatform('X/Twitter')}
                   className={`p-4 rounded-2xl border text-center cursor-pointer transition-all ${
                     targetPlatforms.includes('X/Twitter')
-                      ? 'border-slate-900 bg-slate-100 shadow-xs'
-                      : 'border-slate-200 opacity-60'
+                      ? 'border-slate-900 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shadow-xs'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 opacity-60'
                   }`}
                 >
-                  <Twitter className="w-5 h-5 text-slate-900 mx-auto mb-1" />
-                  <div className="text-xs font-bold text-slate-900">X / Twitter</div>
-                  <div className="text-[10px] text-slate-600 font-semibold">Concise & Punchy</div>
+                  <Twitter className="w-5 h-5 text-slate-900 dark:text-slate-100 mx-auto mb-1" />
+                  <div className="text-xs font-extrabold text-slate-900 dark:text-slate-100">X / Twitter</div>
+                  <div className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold">Concise & Punchy</div>
                 </div>
               </div>
             </div>
@@ -246,13 +246,13 @@ const AiGeneratorPage = () => {
             {/* Target Month */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   5. Calendar Month
                 </label>
                 <select
                   value={month}
                   onChange={(e) => setMonth(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
                 >
                   <option value="September 2026">September 2026</option>
                   <option value="October 2026">October 2026</option>
@@ -262,12 +262,12 @@ const AiGeneratorPage = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Generated Volume
                 </label>
-                <div className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between">
+                <div className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                   <span>30 Posts Scheduled</span>
-                  <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
+                  <span className="text-[10px] bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full font-bold">
                     Full Month Grid
                   </span>
                 </div>
@@ -275,7 +275,7 @@ const AiGeneratorPage = () => {
             </div>
 
             {/* Generate Action */}
-            <div className="pt-4 border-t border-slate-100 flex justify-end">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
               <button
                 type="submit"
                 className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-700 hover:to-violet-800 text-white font-bold text-sm shadow-md shadow-indigo-500/25 transition-all transform active:scale-95 cursor-pointer"
@@ -288,25 +288,25 @@ const AiGeneratorPage = () => {
           </form>
         ) : (
           <div className="py-16 flex flex-col items-center justify-center text-center gap-6">
-            <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
-              <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
+            <div className="w-20 h-20 rounded-3xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-inner">
+              <Loader2 className="w-10 h-10 animate-spin text-indigo-600 dark:text-indigo-400" />
             </div>
 
             <div className="max-w-md">
-              <h3 className="text-xl font-extrabold text-slate-900">
+              <h3 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 font-display">
                 Generating 30 Custom Posts...
               </h3>
-              <p className="text-xs text-slate-500 mt-1">{stageText}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{stageText}</p>
             </div>
 
-            <div className="w-full max-w-sm bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+            <div className="w-full max-w-sm bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-200 dark:border-slate-700">
               <div
                 className="bg-gradient-to-r from-indigo-600 to-violet-500 h-3 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
 
-            <span className="text-xs font-bold text-slate-500">{progress}%</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{progress}%</span>
           </div>
         )}
       </div>

@@ -3,6 +3,8 @@ const Post = require('../models/Post');
 const Brand = require('../models/Brand');
 const { regenerateSinglePost } = require('../services/aiService');
 const { getDBStatus } = require('../config/db');
+const LinkedInToken = require('../models/LinkedInToken');
+const linkedinService = require('../services/linkedinService');
 
 exports.createPost = async (req, res) => {
   try {
@@ -14,31 +16,6 @@ exports.createPost = async (req, res) => {
       return res.status(400).json({ message: 'calendarId, date, title/idea, caption, and platform are required' });
     }
 
-    const { useMockStore } = getDBStatus();
-
-    if (useMockStore) {
-      const { mockPosts } = require('./calendarController');
-      const newPost = {
-        _id: 'mock_post_' + Date.now(),
-        calendar: calendarId,
-        user: userId,
-        brand: brandId || 'mock_brand_default',
-        date: new Date(date),
-        timeSlot: timeSlot || '09:00 AM',
-        platform: (platform === 'X/Twitter' || platform === 'Twitter') ? 'X' : platform,
-        idea: postIdea,
-        title: postIdea,
-        caption,
-        hashtags: Array.isArray(hashtags) ? hashtags : (hashtags ? hashtags.split(',').map(h => h.trim()) : []),
-        postType: postType || 'Educational',
-        imagePrompt: `Visual suggestion for ${postIdea}`,
-        engagementTip: 'Share to story for higher reach',
-        status: status || 'draft',
-        createdAt: new Date(),
-      };
-      mockPosts.push(newPost);
-      return res.status(201).json({ message: 'Post created', post: newPost });
-    }
 
     let effectiveBrandId = brandId;
     if (!effectiveBrandId || !mongoose.Types.ObjectId.isValid(effectiveBrandId)) {
@@ -86,32 +63,8 @@ exports.updatePost = async (req, res) => {
     const userId = req.user.id;
     const { title, idea, caption, hashtags, platform, timeSlot, status, postType, imagePrompt, engagementTip, date } = req.body;
 
-    const { useMockStore } = getDBStatus();
-    const updatedIdea = idea || title;
 
-    if (useMockStore) {
-      const { mockPosts } = require('./calendarController');
-      const index = mockPosts.findIndex(p => p._id === id && p.user === userId);
-      if (index === -1) return res.status(404).json({ message: 'Post not found' });
-
-      mockPosts[index] = {
-        ...mockPosts[index],
-        idea: updatedIdea || mockPosts[index].idea,
-        title: updatedIdea || mockPosts[index].title,
-        caption: caption || mockPosts[index].caption,
-        hashtags: Array.isArray(hashtags) ? hashtags : (typeof hashtags === 'string' ? hashtags.split(',').map(h => h.trim()) : mockPosts[index].hashtags),
-        platform: platform ? ((platform === 'X/Twitter' || platform === 'Twitter') ? 'X' : platform) : mockPosts[index].platform,
-        timeSlot: timeSlot || mockPosts[index].timeSlot,
-        status: status || mockPosts[index].status,
-        postType: postType || mockPosts[index].postType,
-        imagePrompt: imagePrompt !== undefined ? imagePrompt : mockPosts[index].imagePrompt,
-        engagementTip: engagementTip !== undefined ? engagementTip : mockPosts[index].engagementTip,
-        date: date ? new Date(date) : mockPosts[index].date,
-        updatedAt: new Date(),
-      };
-      return res.json({ message: 'Post updated successfully', post: mockPosts[index] });
-    }
-
+    const updatedIdea = idea !== undefined ? idea : title;
     const updateFields = {};
     if (updatedIdea !== undefined) updateFields.idea = updatedIdea;
     if (caption !== undefined) updateFields.caption = caption;
@@ -148,36 +101,11 @@ exports.regeneratePost = async (req, res) => {
     const userId = req.user.id;
     const { customInstruction } = req.body;
 
-    const { useMockStore } = getDBStatus();
 
-    let post;
-    let brand;
-
-    if (useMockStore) {
-      const { mockPosts } = require('./calendarController');
-      const { mockBrands } = require('./brandController');
-      const index = mockPosts.findIndex(p => p._id === id && p.user === userId);
-      if (index === -1) return res.status(404).json({ message: 'Post not found' });
-
-      post = mockPosts[index];
-      brand = mockBrands.find(b => b._id === post.brand) || { name: 'Brand', industry: 'General', tone: 'Professional' };
-
-      console.log('Regenerated data:', regeneratedData);
-
-      mockPosts[index] = {
-        ...mockPosts[index],
-        ...regeneratedData,
-        idea: regeneratedData.idea || regeneratedData.title || mockPosts[index].idea,
-        title: regeneratedData.idea || regeneratedData.title || mockPosts[index].title,
-        updatedAt: new Date(),
-      };
-
-      return res.json({ message: 'Post regenerated with AI', post: mockPosts[index] });
-    }
-
-    post = await Post.findOne({ _id: id, user: userId });
+    let post = await Post.findOne({ _id: id, user: userId });
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
+    let brand;
     if (post.brand && mongoose.Types.ObjectId.isValid(post.brand)) {
       brand = await Brand.findById(post.brand);
     }
@@ -211,19 +139,6 @@ exports.reschedulePost = async (req, res) => {
       return res.status(400).json({ message: 'New date is required for rescheduling' });
     }
 
-    const { useMockStore } = getDBStatus();
-
-    if (useMockStore) {
-      const { mockPosts } = require('./calendarController');
-      const index = mockPosts.findIndex(p => p._id === id && p.user === userId);
-      if (index === -1) return res.status(404).json({ message: 'Post not found' });
-
-      mockPosts[index].date = new Date(date);
-      if (timeSlot) mockPosts[index].timeSlot = timeSlot;
-      mockPosts[index].updatedAt = new Date();
-
-      return res.json({ message: 'Post rescheduled successfully', post: mockPosts[index] });
-    }
 
     const updateObj = { date: new Date(date) };
     if (timeSlot) updateObj.timeSlot = timeSlot;
@@ -247,16 +162,6 @@ exports.deletePost = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const { useMockStore } = getDBStatus();
-
-    if (useMockStore) {
-      const { mockPosts } = require('./calendarController');
-      const index = mockPosts.findIndex(p => p._id === id && p.user === userId);
-      if (index === -1) return res.status(404).json({ message: 'Post not found' });
-
-      mockPosts.splice(index, 1);
-      return res.json({ message: 'Post deleted successfully' });
-    }
 
     const post = await Post.findOneAndDelete({ _id: id, user: userId });
     if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -266,3 +171,55 @@ exports.deletePost = async (req, res) => {
     return res.status(500).json({ message: 'Failed to delete post' });
   }
 };
+
+// Publish post to LinkedIn
+exports.publishToLinkedIn = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const post = await Post.findOne({ _id: id, user: userId });
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    let accessToken;
+
+    // 1. Try DB token first
+    const tokenDoc = await LinkedInToken.findOne({ user: userId });
+    if (tokenDoc) {
+      // Refresh only if expiresAt and refreshToken exist
+      if (tokenDoc.expiresAt && tokenDoc.refreshToken) {
+        const validToken = await linkedinService.refreshTokenIfNeeded(tokenDoc);
+        accessToken = validToken.accessToken;
+      } else {
+        accessToken = tokenDoc.accessToken;
+      }
+    }
+
+    // 2. Fall back to .env token
+    if (!accessToken) {
+      accessToken = process.env.LINKEDIN_ACCESS_TOKEN;
+    }
+
+    if (!accessToken) {
+      return res.status(401).json({ message: 'LinkedIn not authorized. Add your token to LINKEDIN_ACCESS_TOKEN in .env or connect via OAuth.' });
+    }
+
+    const authorUrn = await linkedinService.getProfile(accessToken);
+
+    const result = await linkedinService.publishPost({
+      accessToken,
+      authorUrn,
+      post,
+    });
+
+    post.linkedinUrn = result.id;
+    post.linkedinStatus = 'published';
+    await post.save();
+
+    res.json({ message: 'Published to LinkedIn', linkedinUrn: result.id });
+  } catch (err) {
+    console.error('LinkedIn publish error:', err);
+    res.status(500).json({ message: 'Failed to publish to LinkedIn', error: err.message });
+  }
+};
+

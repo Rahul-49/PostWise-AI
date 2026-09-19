@@ -25,6 +25,7 @@ import {
 import { useCalendar } from '../context/CalendarContext';
 import { useAuth } from '../context/AuthContext';
 import { PexelsCarousel } from './PexelsCarousel';
+import { postAPI } from '../services/api';
 
 const PostEditorModal = () => {
   const { selectedPost, isEditorOpen, closePostEditor, updatePost, deletePost, regeneratePost } = useCalendar();
@@ -45,8 +46,27 @@ const PostEditorModal = () => {
   const [customInstruction, setCustomInstruction] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [pexelsPhotos, setPexelsPhotos] = useState([]);
-  const [pexelsLoading, setPexelsLoading] = useState(false);
+const [isPublishing, setIsPublishing] = useState(false);
+const [pexelsPhotos, setPexelsPhotos] = useState([]);
+const [pexelsLoading, setPexelsLoading] = useState(false);
+
+  const handlePublishLinkedIn = async () => {
+    if (!selectedPost) return;
+    setIsPublishing(true);
+    try {
+      const data = await postAPI.publishLinkedIn(selectedPost._id);
+      alert('Successfully published to LinkedIn! Post URN: ' + (data.linkedinUrn || ''));
+      if (updatePost) {
+        updatePost(selectedPost._id, { linkedinStatus: 'published', linkedinUrn: data.linkedinUrn });
+      }
+    } catch (e) {
+      console.error('LinkedIn publish error:', e);
+      const msg = e?.response?.data?.message || e?.message || 'Error publishing to LinkedIn';
+      alert('Failed to publish to LinkedIn: ' + msg);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedPost) {
@@ -647,9 +667,19 @@ const PostEditorModal = () => {
           </button>
 
           <div className="flex items-center gap-3">
+            {platform === 'LinkedIn' && (
+              <button
+                type="button"
+                onClick={handlePublishLinkedIn}
+                disabled={isPublishing}
+                className="flex items-center gap-1 px-4 py-2 rounded-2xl bg-[#0A66C2] hover:bg-[#0c73e0] text-white text-xs font-extrabold transition-colors cursor-pointer"
+              >
+                {isPublishing ? 'Publishing...' : 'Publish to LinkedIn'}
+              </button>
+            )}
             <button
               type="button"
-              onClick={handleClose}
+              onClick={closePostEditor}
               className="px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 text-xs font-extrabold transition-colors cursor-pointer"
             >
               Cancel
@@ -657,7 +687,7 @@ const PostEditorModal = () => {
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-extrabold shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 text-white text-xs font-extrabold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all cursor-pointer disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               {isSaving ? 'Saving...' : 'Save Changes'}

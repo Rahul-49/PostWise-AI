@@ -59,6 +59,14 @@ const PostSchema = new mongoose.Schema(
       enum: ['draft', 'scheduled', 'published'],
       default: 'draft',
     },
+    linkedinUrn: {
+      type: String,
+    },
+    linkedinStatus: {
+      type: String,
+      enum: ['draft', 'published', 'error'],
+      default: 'draft',
+    },
   },
   { timestamps: true }
 );

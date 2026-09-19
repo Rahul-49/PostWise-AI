@@ -10,5 +10,7 @@ router.put('/:id', postController.updatePost);
 router.post('/:id/regenerate', postController.regeneratePost);
 router.patch('/:id/reschedule', postController.reschedulePost);
 router.delete('/:id', postController.deletePost);
-
+// Publish to LinkedIn
+router.post('/:id/publish/linkedin', postController.publishToLinkedIn);
 module.exports = router;
+

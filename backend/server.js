@@ -6,6 +6,7 @@ const { connectDB, getDBStatus } = require('./config/db');
 // Load env vars
 dotenv.config();
 
+
 const app = express();
 
 // Connect to MongoDB
