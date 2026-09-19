@@ -68,7 +68,7 @@ const LoginRegister = () => {
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              Instant Hackathon Demo
+              Instant Demo
             </span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-200/60 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 font-bold">
               1-Click

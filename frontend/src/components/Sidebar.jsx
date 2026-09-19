@@ -167,7 +167,7 @@ const Sidebar = () => {
         <div className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-50/90 to-violet-50/90 dark:from-indigo-950/50 dark:to-violet-950/40 border border-indigo-100 dark:border-indigo-900/50 text-center">
           <div className="flex items-center justify-center gap-1.5 text-xs font-extrabold text-indigo-700 dark:text-indigo-300">
             <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-            <span>Hackathon 2026</span>
+          
           </div>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Groq AI Powered 30-Day Engine</p>
         </div>

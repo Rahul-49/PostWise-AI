@@ -113,7 +113,7 @@ const LandingPage = () => {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-950/80 border border-indigo-800/80 text-indigo-300 text-xs font-extrabold mb-8 shadow-xl backdrop-blur-md animate-fade-in">
             <Sparkles className="w-4 h-4 text-indigo-400 animate-spin" style={{ animationDuration: '4s' }} />
-            <span>AI Social Media Calendar Generator • Hackathon Showcase 2026</span>
+            <span>• AI Social Media Calendar Generator •</span>
           </div>
 
           {/* Main Title */}
@@ -357,7 +357,7 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="py-8 px-6 border-t border-slate-900 text-center text-xs text-slate-500 font-medium">
-        <p>PostWise-AI • Social Media Content Calendar Generator • Hackathon Submission 2026</p>
+        <p>PostWise-AI • Social Media Content Calendar Generator •</p>
       </footer>
     </div>
   );
