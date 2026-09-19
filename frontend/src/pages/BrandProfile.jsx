@@ -15,7 +15,8 @@ import {
   Instagram,
   Linkedin,
   Twitter,
-  Wand2
+  Wand2,
+  CheckCircle2
 } from 'lucide-react';
 
 const TONE_OPTIONS = [
@@ -111,7 +112,7 @@ const BrandProfile = () => {
     setColor('#4f46e5');
   };
 
-  const applyPreset = (preset) => {
+  const handleApplyPreset = (preset) => {
     setName(preset.name);
     setNiche(preset.niche);
     setTargetAudience(preset.targetAudience);
@@ -121,146 +122,132 @@ const BrandProfile = () => {
     setLiHandle(preset.handles.linkedin);
     setXHandle(preset.handles.twitter);
     setColor(preset.color);
-    showToast(`Loaded preset template: ${preset.name}`, 'info');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) {
-      showToast('Brand name is required', 'error');
-      return;
-    }
-
     setLoading(true);
     try {
       const payload = {
-        name: name.trim(),
-        niche: niche.trim(),
-        targetAudience: targetAudience.trim(),
+        name,
+        niche,
+        targetAudience,
         tone,
-        postingGoals: postingGoals.trim(),
-        color,
-        platforms: ['Instagram', 'LinkedIn', 'X/Twitter'],
+        postingGoals,
         handles: {
-          instagram: igHandle.trim() || `@${name.toLowerCase().replace(/\s+/g, '')}`,
-          linkedin: liHandle.trim() || name,
-          twitter: xHandle.trim() || `@${name.toLowerCase().replace(/\s+/g, '')}`,
+          instagram: igHandle,
+          linkedin: liHandle,
+          twitter: xHandle,
         },
+        color,
       };
 
-      if (selectedBrandId && !isEditingNew) {
-        await brandAPI.updateBrand(selectedBrandId, payload);
-        showToast('Brand profile updated!', 'success');
-      } else {
-        const created = await brandAPI.createBrand(payload);
-        setSelectedBrandId(created._id);
-        setIsEditingNew(false);
-        showToast('New brand profile created!', 'success');
+      if (isEditingNew) {
+        const res = await brandAPI.createBrand(payload);
+        const created = res?.data?.brand || res?.brand || res;
+        await refreshBrands();
+        if (created) {
+          selectActiveBrand(created);
+          loadBrandToForm(created);
+        }
+        showToast && showToast('Brand profile created successfully!', 'success');
+      } else if (selectedBrandId) {
+        const res = await brandAPI.updateBrand(selectedBrandId, payload);
+        const updated = res?.data?.brand || res?.brand || res;
+        await refreshBrands();
+        if (updated) {
+          selectActiveBrand(updated);
+        }
+        showToast && showToast('Brand profile updated successfully!', 'success');
       }
-
-      await refreshBrands();
     } catch (err) {
-      showToast('Failed to save brand profile', 'error');
+      console.error(err);
+      showToast && showToast('Failed to save brand profile', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!selectedBrandId) return;
-    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
-
-    try {
-      await brandAPI.deleteBrand(selectedBrandId);
-      showToast('Brand deleted', 'info');
-      await refreshBrands();
-      handleCreateNewClick();
-    } catch (err) {
-      showToast('Failed to delete brand', 'error');
+    if (!selectedBrandId || isEditingNew) return;
+    if (window.confirm(`Are you sure you want to delete brand "${name}"?`)) {
+      setLoading(true);
+      try {
+        await brandAPI.deleteBrand(selectedBrandId);
+        await refreshBrands();
+        showToast && showToast('Brand profile deleted', 'success');
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-indigo-600" />
-            Brand Profile & Persona
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Configure your brand voice, audience niche, and social handles for AI calendar generation
-          </p>
+    <div className="flex flex-col gap-6 animate-fade-in">
+      {/* Top Banner Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900/80 p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors backdrop-blur-xl">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-xs shrink-0">
+            <Building2 className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 font-display">
+              Brand Profile & Persona Vault
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+              Configure target audience, tone of voice, niche, and platform handles for AI generation
+            </p>
+          </div>
         </div>
 
-        {/* 1-Click Presets */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-500 hidden md:inline">Quick Presets:</span>
-          {PRESETS.map((p) => (
-            <button
-              key={p.name}
-              type="button"
-              onClick={() => applyPreset(p)}
-              className="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-indigo-300 bg-slate-50 hover:bg-indigo-50 text-[11px] font-bold text-slate-700 hover:text-indigo-600 transition-all cursor-pointer"
-            >
-              {p.name.split(' ')[0]}
-            </button>
-          ))}
-        </div>
+        <button
+          onClick={handleCreateNewClick}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-extrabold shadow-md shadow-indigo-500/20 transition-all transform active:scale-95 cursor-pointer self-start md:self-auto"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add New Brand</span>
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Brand List (4 cols) */}
-        <div className="lg:col-span-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Your Brand Profiles ({brands ? brands.length : 0})
-              </span>
-              <button
-                type="button"
-                onClick={handleCreateNewClick}
-                className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                New
-              </button>
-            </div>
+      {/* Main Content Layout: Brand Switcher Cards + Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-7">
+        {/* Left Column: Brand Selector List (4 cols) */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          <div className="bg-white dark:bg-slate-900/80 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-3">
+              Your Brand Personas ({brands.length})
+            </span>
 
-            <div className="flex flex-col gap-2">
-              {brands && brands.map((b) => {
-                const isSelected = selectedBrandId === b._id && !isEditingNew;
-                const isActiveWorkspace = activeBrand && activeBrand._id === b._id;
-
+            <div className="flex flex-col gap-2.5">
+              {brands.map((b) => {
+                const isSelected = !isEditingNew && selectedBrandId === b._id;
                 return (
                   <div
                     key={b._id}
                     onClick={() => {
-                      loadBrandToForm(b);
                       selectActiveBrand(b);
+                      loadBrandToForm(b);
                     }}
-                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
                       isSelected
-                        ? 'border-indigo-600 bg-indigo-50/60 shadow-xs'
-                        : 'border-slate-100 hover:border-slate-200 bg-white'
+                        ? 'border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/60 ring-2 ring-indigo-500/20 shadow-xs'
+                        : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100/80 dark:hover:bg-slate-800'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-xs"
+                      <span
+                        className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs"
                         style={{ backgroundColor: b.color || '#4f46e5' }}
-                      >
-                        {b.name.charAt(0)}
-                      </div>
+                      />
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate">{b.name}</p>
-                        <p className="text-[10px] text-slate-500 truncate">{b.niche || b.industry}</p>
+                        <p className="font-extrabold text-xs text-slate-900 dark:text-slate-100 truncate">{b.name}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate">{b.tone}</p>
                       </div>
                     </div>
-
-                    {isActiveWorkspace && (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold shrink-0">
+                    {isSelected && (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-xs">
                         Active
                       </span>
                     )}
@@ -270,93 +257,99 @@ const BrandProfile = () => {
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-500">
-            Click any profile to load its identity for AI calendar generation.
+          {/* Preset Quick Fill Section */}
+          <div className="bg-gradient-to-br from-indigo-50/80 to-violet-50/80 dark:from-indigo-950/40 dark:to-violet-950/40 p-5 rounded-3xl border border-indigo-100 dark:border-indigo-900/60 shadow-sm">
+            <div className="flex items-center gap-1.5 text-xs font-extrabold text-indigo-900 dark:text-indigo-300 mb-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Quick Brand Presets</span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-3">
+              Load sample brand profiles instantly for testing:
+            </p>
+
+            <div className="flex flex-col gap-2">
+              {PRESETS.map((p) => (
+                <button
+                  key={p.name}
+                  type="button"
+                  onClick={() => handleApplyPreset(p)}
+                  className="w-full text-left p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/40 hover:border-indigo-300 dark:hover:border-indigo-700 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors shadow-xs cursor-pointer flex items-center justify-between"
+                >
+                  <span className="truncate">{p.name}</span>
+                  <span className="text-[10px] font-medium text-slate-400">{p.tone.split('&')[0]}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Right: Brand Profile Form (8 cols) */}
-        <div className="lg:col-span-8 bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900">
-                {isEditingNew ? 'Create New Brand Identity' : `Editing: ${name || 'Brand Profile'}`}
+        {/* Right Column: Brand Configuration Form (8 cols) */}
+        <form onSubmit={handleSubmit} className="lg:col-span-8 bg-white dark:bg-slate-900/80 p-6 md:p-8 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-100 font-display">
+                {isEditingNew ? 'Create New Brand Profile' : `Editing: ${name || 'Brand Profile'}`}
               </h3>
-              {selectedBrandId && !isEditingNew && (
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete Profile
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500">Brand Color:</span>
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="w-7 h-7 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer"
+                />
+              </div>
             </div>
 
-            {/* Brand Name & Color */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Brand Name *
+            {/* Brand Name & Niche */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Brand / Company Name
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 text-xs font-extrabold text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-xs"
                   placeholder="e.g. EcoGlow Wellness"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Brand Theme Color
+                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Niche / Industry Category
                 </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="w-10 h-10 rounded-xl cursor-pointer border border-slate-200 p-0.5"
-                  />
-                  <span className="text-xs font-bold text-slate-700">{color}</span>
-                </div>
+                <input
+                  type="text"
+                  value={niche}
+                  onChange={(e) => setNiche(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 text-xs font-bold text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-xs"
+                  placeholder="e.g. Sustainable Living & Mindful Yoga"
+                  required
+                />
               </div>
-            </div>
-
-            {/* Niche / Industry */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Niche & Industry
-              </label>
-              <input
-                type="text"
-                value={niche}
-                onChange={(e) => setNiche(e.target.value)}
-                placeholder="e.g. Sustainable Yoga, Organic Living & Mindfulness"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs"
-              />
             </div>
 
             {/* Target Audience */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Target Audience Persona
+              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Target Audience Demographics & Persona
               </label>
               <input
                 type="text"
                 value={targetAudience}
                 onChange={(e) => setTargetAudience(e.target.value)}
-                placeholder="e.g. Health-conscious millennials, yoga practitioners, busy remote professionals (24-40)"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs"
+                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 text-xs font-medium text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-xs"
+                placeholder="e.g. Health-conscious professionals, eco-minded millennials (ages 24-42)..."
+                required
               />
             </div>
 
-            {/* Tone of Voice */}
+            {/* Tone of Voice Selector */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                 Brand Tone of Voice
               </label>
               <div className="flex flex-wrap gap-2">
@@ -365,10 +358,10 @@ const BrandProfile = () => {
                     key={t}
                     type="button"
                     onClick={() => setTone(t)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                       tone === t
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-indigo-600 text-white shadow-md'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                   >
                     {t}
@@ -377,74 +370,83 @@ const BrandProfile = () => {
               </div>
             </div>
 
-            {/* Posting Goals */}
+            {/* Core Posting Goals */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Posting Goals & Strategic Outcomes
+              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Core Social Media Posting Goals
               </label>
               <textarea
                 rows={3}
                 value={postingGoals}
                 onChange={(e) => setPostingGoals(e.target.value)}
-                placeholder="e.g. 3 posts per week on product launches, behind-the-scenes, and mindful habit tips to build high trust"
-                className="w-full p-3.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs resize-none"
+                className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 text-xs font-normal text-slate-900 dark:text-slate-100 leading-relaxed outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-xs resize-none"
+                placeholder="e.g. Build community trust, promote 3 core product launches per month, share actionable daily wellness habits..."
               />
             </div>
 
-            {/* Social Media Handles */}
+            {/* Platform Handles Grid */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Platform Social Handles
+              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                Social Handles (For Preview Cards)
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80">
                   <Instagram className="w-4 h-4 text-pink-500 shrink-0" />
                   <input
                     type="text"
                     value={igHandle}
                     onChange={(e) => setIgHandle(e.target.value)}
-                    placeholder="@handle"
-                    className="w-full bg-transparent text-xs text-slate-800 outline-none"
+                    placeholder="@instagram"
+                    className="w-full bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 outline-none"
                   />
                 </div>
-
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50">
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80">
                   <Linkedin className="w-4 h-4 text-[#0A66C2] shrink-0" />
                   <input
                     type="text"
                     value={liHandle}
                     onChange={(e) => setLiHandle(e.target.value)}
-                    placeholder="Page Name"
-                    className="w-full bg-transparent text-xs text-slate-800 outline-none"
+                    placeholder="LinkedIn Profile"
+                    className="w-full bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 outline-none"
                   />
                 </div>
-
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50">
-                  <Twitter className="w-4 h-4 text-slate-900 shrink-0" />
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80">
+                  <Twitter className="w-4 h-4 text-slate-800 dark:text-slate-200 shrink-0" />
                   <input
                     type="text"
                     value={xHandle}
                     onChange={(e) => setXHandle(e.target.value)}
-                    placeholder="@handle"
-                    className="w-full bg-transparent text-xs text-slate-800 outline-none"
+                    placeholder="@twitter"
+                    className="w-full bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 outline-none"
                   />
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Submit Button */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          {/* Form Actions */}
+          <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            {!isEditingNew && selectedBrandId ? (
               <button
-                type="submit"
-                disabled={loading}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
+                type="button"
+                onClick={handleDelete}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-extrabold transition-colors cursor-pointer"
               >
-                <Save className="w-4 h-4" />
-                <span>{loading ? 'Saving...' : 'Save Brand Profile'}</span>
+                <Trash2 className="w-4 h-4" />
+                Delete Profile
               </button>
-            </div>
-          </form>
-        </div>
+            ) : <div />}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2 px-7 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>{loading ? 'Saving Profile...' : 'Save Brand Profile'}</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

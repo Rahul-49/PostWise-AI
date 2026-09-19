@@ -33,23 +33,23 @@ const getPostTypeIcon = (type) => {
 const getPlatformBadge = (platform) => {
   if (platform === 'Instagram') {
     return (
-      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-xs">
-        <Instagram className="w-2.5 h-2.5" />
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-xs">
+        <Instagram className="w-3 h-3" />
         IG
       </span>
     );
   }
   if (platform === 'LinkedIn') {
     return (
-      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#0A66C2] text-white shadow-xs">
-        <Linkedin className="w-2.5 h-2.5" />
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-[#0A66C2] text-white shadow-xs">
+        <Linkedin className="w-3 h-3" />
         LinkedIn
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 dark:bg-slate-700 text-white shadow-xs">
-      <Twitter className="w-2.5 h-2.5" />
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-slate-900 dark:bg-slate-700 text-white shadow-xs">
+      <Twitter className="w-3 h-3" />
       X
     </span>
   );
@@ -113,25 +113,25 @@ const PostCard = memo(({ post, onSelectPost, onRegenerate, isRegenerating }) => 
           >
             <RotateCw className={`w-3 h-3 ${isRegenerating ? 'animate-spin text-indigo-600 dark:text-indigo-400' : ''}`} />
           </button>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">
             {post.timeSlot?.split(' ')[0]}
           </span>
         </div>
       </div>
 
       {/* Post Title */}
-      <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight">
+      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-snug">
         {post.title}
       </p>
 
       {/* Bottom row: Type Icon & Hashtags count */}
-      <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-slate-100 dark:border-slate-700/60 text-[10px] text-slate-400 dark:text-slate-500">
+      <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-slate-100 dark:border-slate-700/60 text-xs text-slate-500 dark:text-slate-400 font-medium">
         <div className="flex items-center gap-1">
           {getPostTypeIcon(post.postType)}
-          <span className="truncate max-w-[80px]">{post.postType?.split(' ')[0]}</span>
+          <span className="truncate max-w-[90px]">{post.postType?.split(' ')[0]}</span>
         </div>
         {post.hashtags && post.hashtags.length > 0 && (
-          <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
             #{post.hashtags.length}
           </span>
         )}
@@ -200,18 +200,18 @@ const CalendarDayCell = memo(({
     >
       {/* Day Cell Header */}
       <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <span
-            className={`inline-flex items-center justify-center text-xs font-bold rounded-lg w-6 h-6 ${
+            className={`inline-flex items-center justify-center text-sm font-extrabold rounded-lg w-7 h-7 ${
               isToday
                 ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100'
+                : 'text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-slate-100'
             }`}
           >
             {cell.dayNumber}
           </span>
           {posts.length > 0 && (
-            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
               ({posts.length})
             </span>
           )}
@@ -295,9 +295,9 @@ const CalendarGrid = ({ year, month, onSelectPost, onAddPostAtDate }) => {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden select-none transition-colors">
       {/* Week Header */}
-      <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/60 text-center text-xs font-bold text-slate-500 dark:text-slate-400 py-3">
+      <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/60 text-center text-sm font-extrabold text-slate-600 dark:text-slate-300 py-3.5">
         {daysOfWeek.map((day, idx) => (
-          <div key={day} className={idx === 0 || idx === 6 ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-300'}>
+          <div key={day} className={idx === 0 || idx === 6 ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}>
             {day}
           </div>
         ))}

@@ -14,7 +14,16 @@ import {
   Zap, 
   ShieldCheck, 
   Layers,
-  ChevronRight
+  ChevronRight,
+  Play,
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  ThumbsUp,
+  Repeat2,
+  Send,
+  MousePointerClick
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -23,62 +32,75 @@ const LandingPage = () => {
 
   const previews = {
     Instagram: {
+      platform: 'Instagram',
       tag: 'Instagram Feed Post • Carousel',
       title: '5-Minute Morning Reset Habit',
       content: `Stop checking your emails before your feet touch the floor. 🧘‍♀️✨\n\nHere's a 3-step morning ritual that will transform your focus today:\n1. 60 seconds of box breathing (in 4, hold 4, out 4)\n2. A glass of lukewarm water with lemon\n3. 3 quick gratitude bullets written on paper\n\nSmall mindful pauses compound into massive peace of mind. Have you taken your first deep breath today? 🌿`,
-      hashtags: '#MorningRoutine #MindfulLiving #WellnessJourney',
+      hashtags: '#MorningRoutine #MindfulLiving #WellnessJourney #SelfCare',
       metric: '8.4% predicted engagement rate',
+      visualPrompt: 'Minimalist serene morning coffee cup with soft sunlight streaming through a window.',
     },
     LinkedIn: {
+      platform: 'LinkedIn',
       tag: 'LinkedIn Thought Leadership • Article',
       title: 'The Hidden ROI of Corporate Wellness Programs',
       content: `Burnout isn't a badge of honor. It's an executive balance sheet leak.\n\nOver the past 6 months, our team tracked 14 tech firms before and after introducing 15-minute guided mindfulness breaks:\n\n• 28% drop in reported afternoon fatigue\n• 19% reduction in unplanned sick leaves\n• 4.2x higher peer-to-peer appreciation notes\n\nSustainable performance is an energy management problem, not a time problem.`,
-      hashtags: '#Leadership #WorkplaceWellness #CompanyCulture',
+      hashtags: '#Leadership #WorkplaceWellness #CompanyCulture #Productivity',
       metric: '7.1% predicted engagement rate',
+      visualPrompt: 'Modern glass-walled executive office with team engaging in a focused standup meeting.',
     },
     'X/Twitter': {
+      platform: 'X/Twitter',
       tag: 'X (Twitter) • Snappy Hook',
       title: 'Hot Take on Hustle Culture',
       content: `Unpopular opinion: If your business model requires you to work 16 hours a day for 5 years straight, you didn't build an asset.\n\nYou built a grueling job where the boss never lets you sleep.\n\nOptimize for leverage, clarity, and rest. 🧘‍♂️⚡`,
       hashtags: '#Founders #BuildInPublic #Productivity',
       metric: '6.2% predicted engagement rate (182 / 280 chars)',
+      visualPrompt: 'Dark mode code editor with clean architectural blueprint overlay.',
     },
   };
 
   const currentPreview = previews[activePlatformTab];
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      {/* Top Navigation */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-6 py-4">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden">
+      {/* Dynamic Background Glow Blobs */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-screen pointer-events-none -z-0 overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] animate-float" />
+        <div className="absolute top-[20%] right-[-10%] w-[600px] h-[600px] bg-violet-600/15 rounded-full blur-[140px] animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute bottom-[10%] left-[20%] w-[450px] h-[450px] bg-pink-600/10 rounded-full blur-[120px] animate-float" style={{ animationDelay: '4s' }} />
+      </div>
+
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 font-bold text-lg">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25 font-extrabold text-xl group-hover:scale-105 transition-transform">
               P
             </div>
-            <span className="font-display font-bold text-xl tracking-tight text-slate-900">
-              PostWise<span className="text-indigo-600">.ai</span>
+            <span className="font-display font-extrabold text-xl tracking-tight text-white">
+              PostWise<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-pink-400">.ai</span>
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-600">
-            <a href="#features" className="hover:text-indigo-600 transition-colors">Features</a>
-            <a href="#demo" className="hover:text-indigo-600 transition-colors">Cross-Platform Voice</a>
-            <a href="#workflow" className="hover:text-indigo-600 transition-colors">How It Works</a>
+          <nav className="hidden md:flex items-center gap-8 text-xs font-extrabold text-slate-300">
+            <a href="#demo" className="hover:text-indigo-400 transition-colors">Cross-Platform AI Engine</a>
+            <a href="#features" className="hover:text-indigo-400 transition-colors">Core Features</a>
+            <a href="#roadmap" className="hover:text-indigo-400 transition-colors">30-Day Workflow</a>
           </nav>
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/login')}
-              className="text-xs font-bold text-slate-700 hover:text-indigo-600 px-3 py-2 transition-colors cursor-pointer"
+              className="text-xs font-bold text-slate-300 hover:text-white px-3.5 py-2 transition-colors cursor-pointer"
             >
               Sign In
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-sm shadow-indigo-500/25 transition-all transform active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-extrabold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 cursor-pointer border border-indigo-400/30"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
               <span>Launch App</span>
             </button>
           </div>
@@ -86,133 +108,147 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-16 pb-20 px-6 overflow-hidden">
-        {/* Background glow dots */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-indigo-500/10 via-purple-500/10 to-pink-500/10 blur-3xl -z-10 pointer-events-none rounded-full" />
-
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold mb-6 shadow-xs animate-fade-in">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            Hackathon Showcase • AI Social Media Content Calendar Generator
+      <section className="relative pt-20 pb-24 px-6 z-10 max-w-7xl mx-auto">
+        <div className="text-center max-w-4xl mx-auto">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-950/80 border border-indigo-800/80 text-indigo-300 text-xs font-extrabold mb-8 shadow-xl backdrop-blur-md animate-fade-in">
+            <Sparkles className="w-4 h-4 text-indigo-400 animate-spin" style={{ animationDuration: '4s' }} />
+            <span>AI Social Media Calendar Generator • Hackathon Showcase 2026</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
-            Generate 30 Days of Tailored Social Posts in <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">One Click.</span>
+          {/* Main Title */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] text-white">
+            Generate 30 Days of Custom Social Media Posts in{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+              One Click.
+            </span>
           </h1>
 
-          <p className="mt-6 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Eliminate creative block forever. Input your brand persona once, and PostWise-AI automatically adapts your core message for Instagram, LinkedIn, and X. Reschedule via drag-and-drop and export ready-to-share roadmaps.
+          <p className="mt-7 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed font-normal">
+            Never run out of social content again. Define your brand profile once, and PostWise-AI automatically structures 30 ready-to-publish posts for Instagram, LinkedIn, and X with custom hooks, captions, visual prompts, and drag-and-drop calendar control.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
+          {/* CTA Buttons */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 cursor-pointer"
+              className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-extrabold shadow-xl shadow-indigo-600/30 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-indigo-400/40"
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Open 30-Day Content Calendar</span>
+              <span>Generate 30-Day Content Roadmap</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
             <button
               onClick={() => navigate('/login')}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold shadow-xs transition-colors cursor-pointer"
+              className="flex items-center gap-2.5 px-7 py-4 rounded-2xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800/80 text-slate-200 text-sm font-extrabold backdrop-blur-md transition-all cursor-pointer"
             >
-              <span>1-Click Demo Login</span>
+              <MousePointerClick className="w-4 h-4 text-indigo-400" />
+              <span>Try Demo Workspace</span>
             </button>
           </div>
 
-          <div className="mt-8 flex items-center justify-center gap-6 text-xs text-slate-500">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Drag-and-Drop Grid
+          {/* Feature Highlights */}
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-xs font-bold text-slate-400">
+            <span className="flex items-center gap-2 bg-slate-900/60 px-3.5 py-1.5 rounded-full border border-slate-800/80">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Drag-and-Drop Monthly Grid
             </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Instagram, LinkedIn & X
+            <span className="flex items-center gap-2 bg-slate-900/60 px-3.5 py-1.5 rounded-full border border-slate-800/80">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Instagram, LinkedIn & X Adaptation
             </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> PDF, CSV & JSON Export
+            <span className="flex items-center gap-2 bg-slate-900/60 px-3.5 py-1.5 rounded-full border border-slate-800/80">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Multi-Format PDF / CSV / JSON Export
             </span>
           </div>
         </div>
       </section>
 
-      {/* Interactive Platform Adaptation Showcase */}
-      <section id="demo" className="py-16 px-6 bg-slate-50 border-y border-slate-200">
+      {/* Interactive Platform Adaptation Engine Showcase */}
+      <section id="demo" className="py-20 px-6 z-10 relative bg-slate-900/50 border-y border-slate-800/80">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
-              Cross-Platform Voice Engine
+          <div className="text-center mb-10">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-400">
+              Platform-Native Tone Engine
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
-              Same Core Idea, Completely Different Voice
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-2 tracking-tight">
+              One Core Topic — 3 Unique Brand Voices
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-xl mx-auto">
-              See how PostWise-AI intelligently adapts the same weekly wellness topic into platform-native formats.
+            <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-xl mx-auto">
+              PostWise-AI automatically adapts your core idea into platform-native formats with specialized tone, length, and hashtag structure.
             </p>
 
-            {/* Platform switcher tabs */}
-            <div className="inline-flex items-center gap-1 p-1 bg-white rounded-2xl border border-slate-200 shadow-xs mt-6">
+            {/* Platform Tab Switchers */}
+            <div className="inline-flex items-center gap-1.5 p-1.5 bg-slate-950/90 rounded-2xl border border-slate-800 shadow-2xl mt-8">
               <button
                 onClick={() => setActivePlatformTab('Instagram')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                   activePlatformTab === 'Instagram'
-                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Instagram className="w-3.5 h-3.5" />
+                <Instagram className="w-4 h-4" />
                 <span>Instagram (Conversational & Emojis)</span>
               </button>
               <button
                 onClick={() => setActivePlatformTab('LinkedIn')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                   activePlatformTab === 'LinkedIn'
-                    ? 'bg-[#0A66C2] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#0A66C2] text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Linkedin className="w-3.5 h-3.5" />
+                <Linkedin className="w-4 h-4" />
                 <span>LinkedIn (Professional & Value)</span>
               </button>
               <button
                 onClick={() => setActivePlatformTab('X/Twitter')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                   activePlatformTab === 'X/Twitter'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-slate-800 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Twitter className="w-3.5 h-3.5" />
-                <span>X / Twitter (Punchy & Short)</span>
+                <Twitter className="w-4 h-4" />
+                <span>X / Twitter (Concise & Punchy)</span>
               </button>
             </div>
           </div>
 
-          {/* Simulated Post Card */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-6 md:p-8 max-w-2xl mx-auto transition-all animate-fade-in">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
+          {/* Realistic Post Feed Card Simulator */}
+          <div className="bg-slate-950/90 rounded-3xl border border-slate-800/90 shadow-2xl p-6 sm:p-8 max-w-2xl mx-auto transition-all animate-scale-in">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/80">
+              <span className="text-xs font-extrabold text-indigo-400 bg-indigo-950/80 px-3 py-1 rounded-lg border border-indigo-900/60">
                 {currentPreview.tag}
               </span>
-              <span className="text-[11px] font-bold text-emerald-600">
+              <span className="text-xs font-bold text-emerald-400">
                 {currentPreview.metric}
               </span>
             </div>
 
-            <h3 className="text-base font-bold text-slate-900 mb-2">{currentPreview.title}</h3>
+            <h3 className="text-lg font-extrabold text-white mb-3">{currentPreview.title}</h3>
 
-            <div className="text-slate-700 whitespace-pre-line leading-relaxed text-xs sm:text-sm bg-slate-50/60 p-4 rounded-2xl border border-slate-100">
+            <div className="text-slate-300 whitespace-pre-line leading-relaxed text-xs sm:text-sm bg-slate-900/80 p-5 rounded-2xl border border-slate-800/80 font-normal">
               {currentPreview.content}
             </div>
 
-            <div className="mt-3 flex items-center justify-between text-xs">
-              <span className="text-indigo-600 font-semibold">{currentPreview.hashtags}</span>
+            {/* AI Visual Prompt Box */}
+            <div className="mt-4 p-3 rounded-xl bg-amber-950/30 border border-amber-900/40 flex items-start gap-2 text-xs text-amber-200">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold">Suggested AI Graphic / Visual:</span>
+                <p className="text-amber-300/80 mt-0.5 text-[11px]">{currentPreview.visualPrompt}</p>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
+              <span className="text-indigo-400 font-bold">{currentPreview.hashtags}</span>
               <button
                 onClick={() => navigate('/calendar')}
-                className="text-indigo-600 hover:text-indigo-700 font-bold flex items-center gap-1"
+                className="text-indigo-400 hover:text-indigo-300 font-extrabold flex items-center gap-1.5 cursor-pointer"
               >
                 <span>Edit in Workspace</span>
-                <ChevronRight className="w-3 h-3" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -220,108 +256,108 @@ const LandingPage = () => {
       </section>
 
       {/* Core Features Grid */}
-      <section id="features" className="py-20 px-6 max-w-7xl mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
-            Engineered for Creators & Brands
+      <section id="features" className="py-24 px-6 max-w-7xl mx-auto z-10 relative">
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-400">
+            Full Product Suite
           </span>
-          <h2 className="text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">
-            Everything You Need to Dominate Social Media
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-2 tracking-tight">
+            Built for Complete Social Media Automation
           </h2>
-          <p className="text-slate-500 text-sm mt-2">
-            Built from the ground up according to the hackathon problem brief.
+          <p className="text-slate-400 text-sm mt-3">
+            Every feature designed to solve real social media creation bottlenecks.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-3xl border border-slate-200 bg-white shadow-subtle hover:shadow-card transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
-              <CalendarIcon className="w-5 h-5" />
+          <div className="p-7 rounded-3xl border border-slate-800/80 bg-slate-900/60 hover:bg-slate-900/90 backdrop-blur-md transition-all hover:-translate-y-1 group">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-950/80 border border-indigo-800 text-indigo-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+              <CalendarIcon className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 mb-2">Drag-and-Drop Rescheduling</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Reschedule any post by dragging it directly between dates on the interactive 30-day monthly grid. Status updates and syncs immediately.
+            <h3 className="font-extrabold text-lg text-white mb-2">Drag-and-Drop Rescheduling</h3>
+            <p className="text-xs text-slate-400 leading-relaxed font-normal">
+              Move posts effortlessly across the interactive 30-day monthly grid. Dropping a card onto any date automatically updates its publishing schedule in MongoDB.
             </p>
           </div>
 
-          <div className="p-6 rounded-3xl border border-slate-200 bg-white shadow-subtle hover:shadow-card transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
-              <RotateCw className="w-5 h-5" />
+          <div className="p-7 rounded-3xl border border-slate-800/80 bg-slate-900/60 hover:bg-slate-900/90 backdrop-blur-md transition-all hover:-translate-y-1 group">
+            <div className="w-12 h-12 rounded-2xl bg-rose-950/80 border border-rose-800 text-rose-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+              <RotateCw className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 mb-2">Individual Post Regeneration</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Don’t like a particular idea? Click refresh on any individual post card to generate alternative copy without resetting your entire calendar.
+            <h3 className="font-extrabold text-lg text-white mb-2">Single-Post Regeneration</h3>
+            <p className="text-xs text-slate-400 leading-relaxed font-normal">
+              Don't like a specific idea? Click the quick refresh button on any card or give custom AI prompts to regenerate individual posts without disrupting the rest of your calendar.
             </p>
           </div>
 
-          <div className="p-6 rounded-3xl border border-slate-200 bg-white shadow-subtle hover:shadow-card transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
-              <Download className="w-5 h-5" />
+          <div className="p-7 rounded-3xl border border-slate-800/80 bg-slate-900/60 hover:bg-slate-900/90 backdrop-blur-md transition-all hover:-translate-y-1 group">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-950/80 border border-emerald-800 text-emerald-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+              <Download className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 mb-2">1-Click Multi-Format Export</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Export your finished 30-day plan into printable PDF roadmaps for stakeholders, CSV spreadsheets for scheduling tools, or clean JSON payloads.
+            <h3 className="font-extrabold text-lg text-white mb-2">Multi-Format Roadmaps</h3>
+            <p className="text-xs text-slate-400 leading-relaxed font-normal">
+              Export your finished 30-day calendar into printable PDF blueprints with brand colors, CSV files for auto-publish tools, or structured JSON payloads.
             </p>
           </div>
 
-          <div className="p-6 rounded-3xl border border-slate-200 bg-white shadow-subtle hover:shadow-card transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-4">
-              <Sparkles className="w-5 h-5" />
+          <div className="p-7 rounded-3xl border border-slate-800/80 bg-slate-900/60 hover:bg-slate-900/90 backdrop-blur-md transition-all hover:-translate-y-1 group">
+            <div className="w-12 h-12 rounded-2xl bg-purple-950/80 border border-purple-800 text-purple-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+              <Sparkles className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 mb-2">Platform-Specific Voice Engine</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Automatically structures emoji-rich captions for Instagram, professional ROI frameworks for LinkedIn, and snappy concise hooks for X.
+            <h3 className="font-extrabold text-lg text-white mb-2">Groq AI 120B Model Engine</h3>
+            <p className="text-xs text-slate-400 leading-relaxed font-normal">
+              Leverages direct API connections to ultra-fast Groq LLM infrastructure (`openai/gpt-oss-120b`) for rapid high-quality social copy generation.
             </p>
           </div>
 
-          <div className="p-6 rounded-3xl border border-slate-200 bg-white shadow-subtle hover:shadow-card transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
-              <BarChart3 className="w-5 h-5" />
+          <div className="p-7 rounded-3xl border border-slate-800/80 bg-slate-900/60 hover:bg-slate-900/90 backdrop-blur-md transition-all hover:-translate-y-1 group">
+            <div className="w-12 h-12 rounded-2xl bg-amber-950/80 border border-amber-800 text-amber-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+              <BarChart3 className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 mb-2">Predictive Analytics Dashboard</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              View estimated impressions, platform distribution breakdown, and best times to post heatmaps to optimize your publishing strategy.
+            <h3 className="font-extrabold text-lg text-white mb-2">Predictive Engagement Insights</h3>
+            <p className="text-xs text-slate-400 leading-relaxed font-normal">
+              Get estimated engagement rates, optimal time slot recommendations, and platform breakdown analytics for maximum reach.
             </p>
           </div>
 
-          <div className="p-6 rounded-3xl border border-slate-200 bg-white shadow-subtle hover:shadow-card transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center mb-4">
-              <ShieldCheck className="w-5 h-5" />
+          <div className="p-7 rounded-3xl border border-slate-800/80 bg-slate-900/60 hover:bg-slate-900/90 backdrop-blur-md transition-all hover:-translate-y-1 group">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-950/80 border border-cyan-800 text-cyan-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+              <ShieldCheck className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 mb-2">Multiple Brand Personas</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Manage multiple client or company brand profiles with custom niches, audience targets, tones of voice, and platform handles.
+            <h3 className="font-extrabold text-lg text-white mb-2">Brand Profile Persona Vault</h3>
+            <p className="text-xs text-slate-400 leading-relaxed font-normal">
+              Configure brand tone (playful, professional, inspirational), target audience demographics, niche keywords, and custom platform handles.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-20 px-6 bg-slate-900 text-white text-center relative overflow-hidden">
+      {/* Final Call To Action */}
+      <section className="py-24 px-6 bg-gradient-to-b from-slate-900 to-slate-950 text-white text-center relative overflow-hidden border-t border-slate-800/80 z-10">
         <div className="max-w-3xl mx-auto relative z-10">
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            Ready to Generate Your 30-Day Content Roadmap?
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
+            Ready to Automate Your Social Content Strategy?
           </h2>
-          <p className="text-slate-400 text-sm mt-3 max-w-xl mx-auto">
-            Experience the full hackathon prototype live with interactive drag-and-drop, individual AI post refresh, and instant export.
+          <p className="text-slate-400 text-sm sm:text-base mt-4 max-w-xl mx-auto font-normal">
+            Generate 30 custom posts tailored for your brand persona in under 10 seconds.
           </p>
 
-          <div className="mt-8 flex justify-center">
+          <div className="mt-10 flex justify-center">
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 transition-all transform active:scale-95 cursor-pointer"
+              className="flex items-center gap-3 px-9 py-4.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-sm shadow-xl shadow-indigo-600/30 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-indigo-400/40"
             >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Launch PostWise-AI Now</span>
-              <ArrowRight className="w-4 h-4" />
+              <Sparkles className="w-5 h-5 text-amber-300" />
+              <span>Launch PostWise-AI Generator</span>
+              <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-slate-100 text-center text-xs text-slate-400">
-        <p>PostWise-AI • AI Social Media Content Calendar Generator • Hackathon Submission 2026</p>
+      <footer className="py-8 px-6 border-t border-slate-900 text-center text-xs text-slate-500 font-medium">
+        <p>PostWise-AI • Social Media Content Calendar Generator • Hackathon Submission 2026</p>
       </footer>
     </div>
   );
