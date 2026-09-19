@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCalendar } from '../context/CalendarContext';
@@ -49,8 +49,17 @@ const AiGeneratorPage = () => {
   const navigate = useNavigate();
 
   const [selectedBrandId, setSelectedBrandId] = useState(
-    activeBrand ? activeBrand._id : (brands && brands[0] ? brands[0]._id : 'brand_ecoglow_1')
+    activeBrand ? activeBrand._id : (brands && brands[0] ? brands[0]._id : '')
   );
+
+  useEffect(() => {
+    if (activeBrand?._id) {
+      setSelectedBrandId(activeBrand._id);
+    } else if (brands && brands.length > 0 && (!selectedBrandId || selectedBrandId === 'brand_ecoglow_1')) {
+      setSelectedBrandId(brands[0]._id);
+    }
+  }, [activeBrand, brands]);
+
   const [campaignId, setCampaignId] = useState('launch');
   const [customGoal, setCustomGoal] = useState('');
   const [month, setMonth] = useState('September 2026');
@@ -88,10 +97,11 @@ const AiGeneratorPage = () => {
     }
 
     try {
-      const brand = brands.find((b) => b._id === selectedBrandId) || brands[0];
+      const brand = brands.find((b) => b._id === selectedBrandId) || activeBrand || brands[0];
+      const targetBrandId = brand?._id || selectedBrandId || activeBrand?._id;
       const preset = CAMPAIGN_PRESETS.find((c) => c.id === campaignId);
       await generateNewCalendar({
-        brandId: selectedBrandId,
+        brandId: targetBrandId,
         topic: customGoal || `${brand?.name || 'Brand'} - ${preset?.title || 'Strategy'}`,
         month,
         platforms: targetPlatforms,

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Post = require('../models/Post');
 const Brand = require('../models/Brand');
 const { regenerateSinglePost } = require('../services/aiService');
@@ -9,8 +10,8 @@ exports.createPost = async (req, res) => {
     const { calendarId, brandId, date, timeSlot, platform, title, idea, caption, hashtags, postType, status } = req.body;
 
     const postIdea = idea || title;
-    if (!calendarId || !brandId || !date || !postIdea || !caption || !platform) {
-      return res.status(400).json({ message: 'calendarId, brandId, date, title/idea, caption, and platform are required' });
+    if (!calendarId || !date || !postIdea || !caption || !platform) {
+      return res.status(400).json({ message: 'calendarId, date, title/idea, caption, and platform are required' });
     }
 
     const { useMockStore } = getDBStatus();
@@ -21,7 +22,7 @@ exports.createPost = async (req, res) => {
         _id: 'mock_post_' + Date.now(),
         calendar: calendarId,
         user: userId,
-        brand: brandId,
+        brand: brandId || 'mock_brand_default',
         date: new Date(date),
         timeSlot: timeSlot || '09:00 AM',
         platform: (platform === 'X/Twitter' || platform === 'Twitter') ? 'X' : platform,
@@ -39,6 +40,22 @@ exports.createPost = async (req, res) => {
       return res.status(201).json({ message: 'Post created', post: newPost });
     }
 
+    let effectiveBrandId = brandId;
+    if (!effectiveBrandId || !mongoose.Types.ObjectId.isValid(effectiveBrandId)) {
+      const userBrand = await Brand.findOne({ user: userId }).sort({ createdAt: -1 });
+      if (userBrand) {
+        effectiveBrandId = userBrand._id;
+      } else {
+        const newBrand = await Brand.create({
+          user: userId,
+          name: 'EcoGlow Organics',
+          industry: 'Sustainable Wellness & Beauty',
+          tone: 'Inspirational',
+        });
+        effectiveBrandId = newBrand._id;
+      }
+    }
+
     const formattedHashtags = Array.isArray(hashtags)
       ? hashtags
       : typeof hashtags === 'string' ? hashtags.split(',').map(h => h.trim()).filter(Boolean) : [];
@@ -46,7 +63,7 @@ exports.createPost = async (req, res) => {
     const post = await Post.create({
       calendar: calendarId,
       user: userId,
-      brand: brandId,
+      brand: effectiveBrandId,
       date: new Date(date),
       timeSlot: timeSlot || '09:00 AM',
       platform: (platform === 'X/Twitter' || platform === 'Twitter') ? 'X' : platform,
@@ -145,7 +162,7 @@ exports.regeneratePost = async (req, res) => {
       post = mockPosts[index];
       brand = mockBrands.find(b => b._id === post.brand) || { name: 'Brand', industry: 'General', tone: 'Professional' };
 
-      const regeneratedData = await regenerateSinglePost({ post, brand, customInstruction });
+      console.log('Regenerated data:', regeneratedData);
 
       mockPosts[index] = {
         ...mockPosts[index],
@@ -161,7 +178,9 @@ exports.regeneratePost = async (req, res) => {
     post = await Post.findOne({ _id: id, user: userId });
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
-    brand = await Brand.findById(post.brand);
+    if (post.brand && mongoose.Types.ObjectId.isValid(post.brand)) {
+      brand = await Brand.findById(post.brand);
+    }
     if (!brand) {
       brand = { name: 'Brand', industry: 'General', tone: 'Professional' };
     }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Sparkles, 
@@ -52,8 +52,17 @@ const AiGenerateModal = ({ isOpen, onClose, onGenerated }) => {
 
   const [step, setStep] = useState(1);
   const [selectedBrandId, setSelectedBrandId] = useState(
-    activeBrand ? activeBrand._id : (brands[0] ? brands[0]._id : 'brand_ecoglow_1')
+    activeBrand ? activeBrand._id : (brands && brands[0] ? brands[0]._id : '')
   );
+
+  useEffect(() => {
+    if (activeBrand?._id) {
+      setSelectedBrandId(activeBrand._id);
+    } else if (brands && brands.length > 0 && (!selectedBrandId || selectedBrandId === 'brand_ecoglow_1')) {
+      setSelectedBrandId(brands[0]._id);
+    }
+  }, [activeBrand, brands]);
+
   const [campaignType, setCampaignType] = useState('launch');
   const [customTopic, setCustomTopic] = useState('');
   const [targetPlatforms, setTargetPlatforms] = useState(['Instagram', 'LinkedIn', 'X/Twitter']);
@@ -94,9 +103,10 @@ const AiGenerateModal = ({ isOpen, onClose, onGenerated }) => {
     }
 
     try {
-      const brand = brands.find((b) => b._id === selectedBrandId) || brands[0];
+      const brand = brands.find((b) => b._id === selectedBrandId) || activeBrand || brands[0];
+      const targetBrandId = brand?._id || selectedBrandId || activeBrand?._id;
       const res = await generateNewCalendar({
-        brandId: selectedBrandId,
+        brandId: targetBrandId,
         topic: customTopic || `${brand?.name || 'Brand'} - ${CAMPAIGN_PRESETS.find(c => c.id === campaignType)?.title || 'Campaign'}`,
         month,
       });

@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import Toast from './Toast';
 import AiGenerateModal from './AiGenerateModal';
+import PostEditorModal from './PostEditorModal';
 
 const Layout = () => {
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
@@ -34,6 +35,9 @@ const Layout = () => {
         onClose={() => setIsAiModalOpen(false)}
         onGenerated={handleGenerated}
       />
+
+      {/* Fullscreen Post Editor Modal */}
+      <PostEditorModal />
 
       {/* Toast Notification Container */}
       <Toast />

@@ -4,17 +4,51 @@ const { getDBStatus } = require('../config/db');
 
 const mockBrands = [];
 
+const mongoose = require('mongoose');
+
 exports.getBrands = async (req, res) => {
   try {
     const userId = req.user.id;
     const { useMockStore } = getDBStatus();
 
     if (useMockStore) {
-      const userBrands = mockBrands.filter(b => b.user === userId);
+      let userBrands = mockBrands.filter(b => b.user === userId);
+      if (userBrands.length === 0) {
+        const defaultMock = {
+          _id: 'brand_ecoglow_1',
+          user: userId,
+          name: 'EcoGlow Organics',
+          industry: 'Sustainable Wellness & Beauty',
+          targetAudience: 'Eco-conscious consumers, skincare lovers, wellness enthusiasts',
+          tone: 'Inspirational',
+          platforms: ['Instagram', 'LinkedIn', 'X/Twitter'],
+          keywords: ['sustainability', 'cleanbeauty', 'organic', 'wellness', 'crueltyfree'],
+          description: 'Eco-friendly and organic wellness products designed for everyday mindfulness.',
+          createdAt: new Date(),
+        };
+        mockBrands.push(defaultMock);
+        userBrands = [defaultMock];
+      }
       return res.json({ brands: userBrands });
     }
 
-    const brands = await Brand.find({ user: userId }).sort({ createdAt: -1 });
+    let brands = await Brand.find({ user: userId }).sort({ createdAt: -1 });
+
+    // Auto-seed a default brand in MongoDB if user has no brands yet
+    if (brands.length === 0) {
+      const defaultBrand = await Brand.create({
+        user: userId,
+        name: 'EcoGlow Organics',
+        industry: 'Sustainable Wellness & Beauty',
+        targetAudience: 'Eco-conscious consumers, skincare lovers, wellness enthusiasts',
+        tone: 'Inspirational',
+        platforms: ['Instagram', 'LinkedIn', 'X/Twitter'],
+        keywords: ['sustainability', 'cleanbeauty', 'organic', 'wellness', 'crueltyfree'],
+        description: 'Eco-friendly and organic wellness products designed for everyday mindfulness.',
+      });
+      brands = [defaultBrand];
+    }
+
     return res.json({ brands });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to fetch brand profiles', error: error.message });
@@ -31,6 +65,10 @@ exports.getBrandById = async (req, res) => {
       const brand = mockBrands.find(b => b._id === id && b.user === userId);
       if (!brand) return res.status(404).json({ message: 'Brand profile not found' });
       return res.json({ brand });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Brand profile not found' });
     }
 
     const brand = await Brand.findOne({ _id: id, user: userId });
@@ -130,6 +168,10 @@ exports.updateBrand = async (req, res) => {
     const updateData = { name, industry, targetAudience, tone, platforms, description, website };
     if (formattedKeywords) updateData.keywords = formattedKeywords;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Brand profile not found' });
+    }
+
     const brand = await Brand.findOneAndUpdate(
       { _id: id, user: userId },
       { $set: updateData },
@@ -155,6 +197,10 @@ exports.deleteBrand = async (req, res) => {
       if (index === -1) return res.status(404).json({ message: 'Brand profile not found' });
       mockBrands.splice(index, 1);
       return res.json({ message: 'Brand profile deleted successfully' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Brand profile not found' });
     }
 
     const brand = await Brand.findOneAndDelete({ _id: id, user: userId });

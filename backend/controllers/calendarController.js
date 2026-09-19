@@ -58,6 +58,7 @@ exports.generateCalendar = async (req, res) => {
     const { targetMonth, targetYear } = parseMonthAndYear(month, year, validStart);
 
     const { useMockStore } = getDBStatus();
+    const mongoose = require('mongoose');
 
     let brand;
     if (useMockStore) {
@@ -65,19 +66,38 @@ exports.generateCalendar = async (req, res) => {
       brand = mockBrands.find(b => b._id === brandId && b.user === userId);
       if (!brand) {
         brand = {
-          _id: brandId,
+          _id: brandId || 'mock_brand_default',
           brandName: 'Demo Brand',
           name: 'Demo Brand',
-          industry: 'Technology',
+          industry: topicNiche || 'Technology',
           targetAudience: 'Creators & Entrepreneurs',
           tone: 'Professional',
           platforms: ['Instagram', 'LinkedIn', 'X'],
         };
       }
     } else {
-      brand = await Brand.findOne({ _id: brandId, user: userId });
+      // 1. Try finding by brandId if it is a valid MongoDB ObjectId
+      if (brandId && mongoose.Types.ObjectId.isValid(brandId)) {
+        brand = await Brand.findOne({ _id: brandId, user: userId });
+      }
+
+      // 2. If not found (e.g. frontend sent mock ID 'brand_ecoglow_1'), find user's latest brand
       if (!brand) {
-        return res.status(404).json({ message: 'Selected brand profile not found or unauthorized' });
+        brand = await Brand.findOne({ user: userId }).sort({ createdAt: -1 });
+      }
+
+      // 3. If user has no brand at all, auto-create a default brand profile in MongoDB
+      if (!brand) {
+        brand = await Brand.create({
+          user: userId,
+          name: 'EcoGlow Organics',
+          industry: topicNiche || 'Sustainable Wellness & Beauty',
+          targetAudience: 'Eco-conscious consumers, skincare lovers, wellness enthusiasts',
+          tone: 'Inspirational',
+          platforms: ['Instagram', 'LinkedIn', 'X/Twitter'],
+          keywords: ['sustainability', 'cleanbeauty', 'organic', 'wellness', 'crueltyfree'],
+          description: 'Eco-friendly and organic wellness products designed for everyday mindfulness.',
+        });
       }
     }
 
@@ -141,7 +161,7 @@ exports.generateCalendar = async (req, res) => {
 
     const calendar = await Calendar.create({
       user: userId,
-      brand: brandId,
+      brand: brand._id,
       title: calendarTitle,
       month: targetMonth,
       year: targetYear,
@@ -155,7 +175,7 @@ exports.generateCalendar = async (req, res) => {
       ...p,
       calendar: calendar._id,
       user: userId,
-      brand: brandId,
+      brand: brand._id,
       idea: p.idea || p.title || `Day ${idx + 1} Content Idea`,
       caption: p.caption || `Post caption for ${bName}`,
       platform: (p.platform === 'X/Twitter' || p.platform === 'Twitter') ? 'X' : (p.platform || 'Instagram'),

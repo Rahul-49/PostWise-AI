@@ -19,7 +19,7 @@ import { useCalendar } from '../context/CalendarContext';
 import { useAuth } from '../context/AuthContext';
 import CalendarGrid from '../components/CalendarGrid';
 import CalendarAgendaView from '../components/CalendarAgendaView';
-import PostEditorModal from '../components/PostEditorModal';
+
 
 const ContentCalendar = () => {
   const { 
@@ -332,8 +332,7 @@ const ContentCalendar = () => {
         <CalendarAgendaView onSelectPost={openPostEditor} />
       )}
 
-      {/* Global Post Editor Modal */}
-      <PostEditorModal />
+
     </div>
   );
 };

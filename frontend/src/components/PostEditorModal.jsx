@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useCalendar } from '../context/CalendarContext';
 import { useAuth } from '../context/AuthContext';
+import { PexelsCarousel } from './PexelsCarousel';
 
 const PostEditorModal = () => {
   const { selectedPost, isEditorOpen, closePostEditor, updatePost, deletePost, regeneratePost } = useCalendar();
@@ -44,6 +45,8 @@ const PostEditorModal = () => {
   const [customInstruction, setCustomInstruction] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [pexelsPhotos, setPexelsPhotos] = useState([]);
+  const [pexelsLoading, setPexelsLoading] = useState(false);
 
   useEffect(() => {
     if (selectedPost) {
@@ -66,6 +69,51 @@ const PostEditorModal = () => {
         const cleanDate = selectedPost.date.split('T')[0];
         setDateStr(cleanDate);
       }
+    }
+  }, [selectedPost]);
+
+  // Build a search term from post content with at least 1 and at most 3 words
+  const buildSearchTerm = (targetTitle = title, targetCaption = caption) => {
+    const combined = `${targetTitle || ''} ${targetCaption || ''}`.trim();
+    if (!combined) return 'lifestyle';
+
+    const stopWords = new Set([
+      'the', 'and', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'it',
+      'this', 'that', 'your', 'you', 'how', 'why', 'what', 'are', 'was', 'were', 'from', 'we', 'our',
+      'post', 'tip', 'tips', 'here', 'day', 'days', 'more'
+    ]);
+
+    const words = combined
+      .replace(/[#@$%^&*()_+=[\]{};':"\\|,.<>/?`~!-]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !stopWords.has(w.toLowerCase()));
+
+    const selected = words.slice(0, 3);
+    return selected.length > 0 ? selected.join(' ') : 'content';
+  };
+
+  const fetchPexelsImages = async (customTerm) => {
+    const term = customTerm !== undefined ? customTerm : buildSearchTerm();
+    if (!term || !term.trim()) return;
+    setPexelsLoading(true);
+    try {
+      const res = await fetch(`/api/pexels/search?term=${encodeURIComponent(term.trim())}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPexelsPhotos(data.photos || []);
+      }
+    } catch (err) {
+      console.error('Error fetching Pexels images:', err);
+    } finally {
+      setPexelsLoading(false);
+    }
+  };
+
+  // Fetch images from Pexels when post opens
+  useEffect(() => {
+    if (selectedPost) {
+      const term = buildSearchTerm(selectedPost.title, selectedPost.caption);
+      fetchPexelsImages(term);
     }
   }, [selectedPost]);
 
@@ -103,13 +151,19 @@ const PostEditorModal = () => {
     try {
       const updated = await regeneratePost(selectedPost._id, customInstruction);
       if (updated) {
-        setTitle(updated.title);
-        setCaption(updated.caption);
-        setHashtagsStr(
-          Array.isArray(updated.hashtags) ? updated.hashtags.join(' ') : updated.hashtags || ''
-        );
-        setImagePrompt(updated.imagePrompt || '');
-        setEngagementTip(updated.engagementTip || '');
+        setTitle(updated.title || updated.idea);
+      setCaption(updated.caption);
+      setHashtagsStr(
+        Array.isArray(updated.hashtags)
+          ? updated.hashtags.join(' ')
+          : updated.hashtags || ''
+      );
+      setImagePrompt(updated.imagePrompt || '');
+      setEngagementTip(updated.engagementTip || '');
+
+        // Fetch fresh Pexels photos matching the regenerated content
+        const newTerm = buildSearchTerm(updated.title, updated.caption);
+        fetchPexelsImages(newTerm);
       }
       setCustomInstruction('');
     } finally {
@@ -122,6 +176,12 @@ const PostEditorModal = () => {
       await deletePost(selectedPost._id);
     }
   };
+
+  const handleClose = () => {
+    setPexelsPhotos([]);
+    closePostEditor();
+  };
+
 
   const characterCount = caption.length;
   const wordCount = caption.trim() ? caption.trim().split(/\s+/).length : 0;
@@ -145,7 +205,7 @@ const PostEditorModal = () => {
           </div>
 
           <button
-            onClick={closePostEditor}
+            onClick={handleClose}
             className="p-2 rounded-2xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -332,6 +392,30 @@ const PostEditorModal = () => {
                 className="w-full px-3.5 py-2 rounded-2xl border border-indigo-200/80 dark:border-indigo-800 bg-white dark:bg-slate-900 text-xs font-medium text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
+            {/* Pexels Visual Match & Search Indicator */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-700 dark:text-slate-200">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                  Pexels Visual Match
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                    {pexelsPhotos.length} {pexelsPhotos.length === 1 ? 'photo' : 'photos'} found
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fetchPexelsImages(buildSearchTerm())}
+                  disabled={pexelsLoading}
+                  className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                >
+                  <RotateCw className={`w-3 h-3 ${pexelsLoading ? 'animate-spin' : ''}`} />
+                  {pexelsLoading ? 'Searching…' : 'Refresh Images'}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                Matched search term: <span className="font-bold text-slate-700 dark:text-slate-300">"{buildSearchTerm()}"</span> (displayed in post display preview)
+              </p>
+            </div>
           </form>
 
           {/* Right Column: Live Feed Simulation (5 cols) */}
@@ -404,16 +488,25 @@ const PostEditorModal = () => {
                 </div>
 
                 <div className="relative aspect-square bg-slate-900 flex flex-col justify-end p-4 text-white overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&auto=format&fit=crop&q=80"
-                    alt="post visual"
-                    className="absolute inset-0 w-full h-full object-cover opacity-80"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                  {pexelsLoading ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-300 gap-2 z-10">
+                      <RotateCw className="w-6 h-6 animate-spin text-indigo-400" />
+                      <span className="text-xs font-semibold">Finding Pexels pictures...</span>
+                    </div>
+                  ) : pexelsPhotos.length > 0 ? (
+                    <PexelsCarousel photos={pexelsPhotos} className="absolute inset-0 w-full h-full rounded-none" />
+                  ) : (
+                    <img
+                      src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&auto=format&fit=crop&q=80"
+                      alt="post visual"
+                      className="absolute inset-0 w-full h-full object-cover opacity-80"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
                   
-                  <div className="relative z-10">
+                  <div className="relative z-10 pointer-events-none">
                     <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-extrabold mb-1">
-                      {postType}
+                      {pexelsPhotos.length > 1 ? 'Carousel' : postType}
                     </span>
                     <p className="font-extrabold text-sm text-white drop-shadow leading-snug">
                       {title}
@@ -473,6 +566,12 @@ const PostEditorModal = () => {
                   {caption}
                 </div>
 
+                {pexelsPhotos.length > 0 && (
+                  <div className="mt-3 rounded-2xl overflow-hidden aspect-video relative">
+                    <PexelsCarousel photos={pexelsPhotos} className="w-full h-full rounded-2xl" />
+                  </div>
+                )}
+
                 {hashtagsStr && (
                   <p className="text-[#0A66C2] dark:text-blue-400 font-bold text-xs mt-2.5">{hashtagsStr}</p>
                 )}
@@ -509,6 +608,12 @@ const PostEditorModal = () => {
                       {caption}
                     </div>
 
+                    {pexelsPhotos.length > 0 && (
+                      <div className="mt-3 rounded-2xl overflow-hidden aspect-video relative">
+                        <PexelsCarousel photos={pexelsPhotos} className="w-full h-full rounded-2xl" />
+                      </div>
+                    )}
+
                     {hashtagsStr && (
                       <p className="text-indigo-600 dark:text-indigo-400 font-bold text-xs mt-2">{hashtagsStr}</p>
                     )}
@@ -544,7 +649,7 @@ const PostEditorModal = () => {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={closePostEditor}
+              onClick={handleClose}
               className="px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 text-xs font-extrabold transition-colors cursor-pointer"
             >
               Cancel

@@ -20,9 +20,11 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/brands', require('./routes/brandRoutes'));
 app.use('/api/calendars', require('./routes/calendarRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
-
+const pexelsRouter = require('./routes/pexels');
 // Health check endpoint
+app.use('/api/pexels', pexelsRouter);
 app.get('/api/health', (req, res) => {
+
   const dbStatus = getDBStatus();
   res.json({
     status: 'ok',
