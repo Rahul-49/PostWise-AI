@@ -59,6 +59,10 @@ const PostSchema = new mongoose.Schema(
       enum: ['draft', 'scheduled', 'published'],
       default: 'draft',
     },
+    imageUrl: {
+      type: String,
+      default: '',
+    },
     linkedinUrn: {
       type: String,
     },

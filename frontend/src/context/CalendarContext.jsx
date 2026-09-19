@@ -224,6 +224,10 @@ export const CalendarProvider = ({ children }) => {
 
   // Filtered posts calculation
   const filteredPosts = posts.filter((post) => {
+    // Filter by active brand if set
+    if (activeBrand && post.brandId && post.brandId !== activeBrand._id) {
+      return false;
+    }
     if (platformFilter !== 'All' && post.platform !== platformFilter) {
       return false;
     }

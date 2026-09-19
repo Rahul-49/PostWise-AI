@@ -132,8 +132,8 @@ export const postAPI = {
     const res = await api.delete(`/posts/${id}`);
     return res.data;
   },
-  publishLinkedIn: async (id) => {
-    const res = await api.post(`/posts/${id}/publish/linkedin`);
+  publishLinkedIn: async (id, data = {}) => {
+    const res = await api.post(`/posts/${id}/publish/linkedin`, data);
     return res.data;
   },
 };

@@ -61,7 +61,7 @@ exports.updatePost = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const { title, idea, caption, hashtags, platform, timeSlot, status, postType, imagePrompt, engagementTip, date } = req.body;
+    const { title, idea, caption, hashtags, platform, timeSlot, status, postType, imagePrompt, engagementTip, date, imageUrl } = req.body;
 
 
     const updatedIdea = idea !== undefined ? idea : title;
@@ -74,6 +74,7 @@ exports.updatePost = async (req, res) => {
     if (postType !== undefined) updateFields.postType = postType;
     if (imagePrompt !== undefined) updateFields.imagePrompt = imagePrompt;
     if (engagementTip !== undefined) updateFields.engagementTip = engagementTip;
+    if (imageUrl !== undefined) updateFields.imageUrl = imageUrl;
     if (date !== undefined) updateFields.date = new Date(date);
     if (hashtags !== undefined) {
       updateFields.hashtags = Array.isArray(hashtags)
@@ -206,12 +207,18 @@ exports.publishToLinkedIn = async (req, res) => {
 
     const authorUrn = await linkedinService.getProfile(accessToken);
 
+    const imageUrl = req.body?.imageUrl || post.imageUrl;
+
     const result = await linkedinService.publishPost({
       accessToken,
       authorUrn,
       post,
+      imageUrl,
     });
 
+    if (imageUrl && !post.imageUrl) {
+      post.imageUrl = imageUrl;
+    }
     post.linkedinUrn = result.id;
     post.linkedinStatus = 'published';
     await post.save();

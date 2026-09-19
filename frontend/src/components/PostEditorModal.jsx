@@ -49,15 +49,21 @@ const PostEditorModal = () => {
 const [isPublishing, setIsPublishing] = useState(false);
 const [pexelsPhotos, setPexelsPhotos] = useState([]);
 const [pexelsLoading, setPexelsLoading] = useState(false);
+const [selectedImageUrl, setSelectedImageUrl] = useState('');
 
   const handlePublishLinkedIn = async () => {
     if (!selectedPost) return;
     setIsPublishing(true);
     try {
-      const data = await postAPI.publishLinkedIn(selectedPost._id);
-      alert('Successfully published to LinkedIn! Post URN: ' + (data.linkedinUrn || ''));
+      const activeImg = selectedImageUrl || (pexelsPhotos && pexelsPhotos[0]) || selectedPost.imageUrl;
+      const data = await postAPI.publishLinkedIn(selectedPost._id, { imageUrl: activeImg });
+      alert('Successfully published to LinkedIn with image! Post URN: ' + (data.linkedinUrn || ''));
       if (updatePost) {
-        updatePost(selectedPost._id, { linkedinStatus: 'published', linkedinUrn: data.linkedinUrn });
+        updatePost(selectedPost._id, { 
+          linkedinStatus: 'published', 
+          linkedinUrn: data.linkedinUrn,
+          imageUrl: activeImg,
+        });
       }
     } catch (e) {
       console.error('LinkedIn publish error:', e);
@@ -84,6 +90,7 @@ const [pexelsLoading, setPexelsLoading] = useState(false);
       setTimeSlot(selectedPost.timeSlot || '09:00 AM');
       setImagePrompt(selectedPost.imagePrompt || '');
       setEngagementTip(selectedPost.engagementTip || '');
+      setSelectedImageUrl(selectedPost.imageUrl || '');
 
       if (selectedPost.date) {
         const cleanDate = selectedPost.date.split('T')[0];
@@ -120,7 +127,11 @@ const [pexelsLoading, setPexelsLoading] = useState(false);
       const res = await fetch(`/api/pexels/search?term=${encodeURIComponent(term.trim())}`);
       if (res.ok) {
         const data = await res.json();
-        setPexelsPhotos(data.photos || []);
+        const photos = data.photos || [];
+        setPexelsPhotos(photos);
+        if (photos.length > 0 && !selectedImageUrl) {
+          setSelectedImageUrl(photos[0]);
+        }
       }
     } catch (err) {
       console.error('Error fetching Pexels images:', err);
@@ -159,6 +170,7 @@ const [pexelsLoading, setPexelsLoading] = useState(false);
         timeSlot,
         imagePrompt,
         engagementTip,
+        imageUrl: selectedImageUrl,
       });
       closePostEditor();
     } finally {
@@ -514,7 +526,11 @@ const [pexelsLoading, setPexelsLoading] = useState(false);
                       <span className="text-xs font-semibold">Finding Pexels pictures...</span>
                     </div>
                   ) : pexelsPhotos.length > 0 ? (
-                    <PexelsCarousel photos={pexelsPhotos} className="absolute inset-0 w-full h-full rounded-none" />
+                    <PexelsCarousel 
+                      photos={pexelsPhotos} 
+                      className="absolute inset-0 w-full h-full rounded-none" 
+                      onSelectPhoto={(photo) => setSelectedImageUrl(photo)}
+                    />
                   ) : (
                     <img
                       src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&auto=format&fit=crop&q=80"
@@ -588,7 +604,11 @@ const [pexelsLoading, setPexelsLoading] = useState(false);
 
                 {pexelsPhotos.length > 0 && (
                   <div className="mt-3 rounded-2xl overflow-hidden aspect-video relative">
-                    <PexelsCarousel photos={pexelsPhotos} className="w-full h-full rounded-2xl" />
+                    <PexelsCarousel 
+                      photos={pexelsPhotos} 
+                      className="w-full h-full rounded-2xl" 
+                      onSelectPhoto={(photo) => setSelectedImageUrl(photo)}
+                    />
                   </div>
                 )}
 

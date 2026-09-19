@@ -13,13 +13,28 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useCalendar } from '../context/CalendarContext';
+import { postAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const CalendarAgendaView = ({ onSelectPost }) => {
-  const { filteredPosts, regeneratePost, deletePost } = useCalendar();
+  const { filteredPosts, regeneratePost, deletePost, refreshCalendar } = useCalendar();
+  const { showToast } = useAuth();
 
   // Sort filtered posts chronologically
   const sortedPosts = [...filteredPosts].sort((a, b) => new Date(a.date) - new Date(b.date));
 
+  const handlePublishLinkedIn = async (postId) => {
+    try {
+      const data = await postAPI.publishLinkedIn(postId);
+      showToast('Published to LinkedIn!', 'success');
+      // Refresh calendar data to reflect published status
+      if (refreshCalendar) await refreshCalendar();
+    } catch (e) {
+      console.error('LinkedIn publish error:', e);
+      const msg = e?.response?.data?.message || e?.message || 'Error publishing to LinkedIn';
+      showToast(`Failed to publish: ${msg}`, 'error');
+    }
+  };
   // Helper badge
   const getPlatformBadge = (platform) => {
     if (platform === 'Instagram') {
@@ -134,6 +149,16 @@ const CalendarAgendaView = ({ onSelectPost }) => {
                 <RotateCw className="w-4 h-4" />
               </button>
 
+              {post.platform === 'LinkedIn' && post.linkedinStatus !== 'published' && (
+                <button
+                  onClick={() => handlePublishLinkedIn(post._id)}
+                  title="Publish to LinkedIn"
+                  className="p-2 rounded-lg text-slate-400 hover:text-[#0A66C2] dark:hover:text-[#0A66C2] hover:bg-[#0A66C2]/10 dark:hover:bg-[#0A66C2]/20 transition-colors cursor-pointer"
+                >
+                  <Linkedin className="w-4 h-4" />
+                </button>
+              )}
+
               <button
                 onClick={() => onSelectPost(post)}
                 title="Edit Post"
@@ -148,8 +173,7 @@ const CalendarAgendaView = ({ onSelectPost }) => {
                 className="p-2 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+              </button>            </div>
           </div>
         );
       })}

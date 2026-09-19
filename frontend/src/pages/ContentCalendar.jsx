@@ -267,22 +267,29 @@ const ContentCalendar = () => {
             <span className="text-sm font-bold text-slate-600 dark:text-slate-300 mr-1 flex items-center gap-1">
               <Filter className="w-3.5 h-3.5" /> Platform:
             </span>
-            {['All', 'Instagram', 'LinkedIn', 'X/Twitter'].map((p) => {
-              const isActive = platformFilter === p;
-              return (
-                <button
-                  key={p}
-                  onClick={() => setPlatformFilter(p)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {p === 'X/Twitter' ? 'X' : p}
-                </button>
-              );
-            })}
+            {(() => {
+              // Gather platforms actually present in current posts
+              const platformsInPosts = Array.from(new Set(posts.map(p => p.platform === 'Twitter' || p.platform === 'X' ? 'X/Twitter' : p.platform).filter(Boolean)));
+              const availablePlatforms = platformsInPosts.length > 0 
+                ? ['All', ...platformsInPosts] 
+                : ['All', 'Instagram', 'LinkedIn', 'X/Twitter'];
+              return availablePlatforms.map((p) => {
+                const isActive = platformFilter === p;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPlatformFilter(p)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {p === 'X/Twitter' ? 'X' : p}
+                  </button>
+                );
+              });
+            })()}
           </div>
 
           {/* Status filter pills */}

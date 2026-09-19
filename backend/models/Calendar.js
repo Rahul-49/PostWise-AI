@@ -36,6 +36,10 @@ const CalendarSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    platforms: {
+      type: [String],
+      default: ['Instagram', 'LinkedIn', 'X'],
+    },
   },
   { timestamps: true }
 );

@@ -34,8 +34,8 @@ const Sidebar = () => {
           className="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer group hover:bg-slate-100/60 dark:hover:bg-slate-800/50 transition-all"
           onClick={() => navigate('/dashboard')}
         >
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25 font-extrabold text-xl group-hover:scale-105 transition-transform">
-            P
+          <div className="w-10 h-10 rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-md shadow-indigo-500/10 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+            <img src="/logo.png" alt="PostWise-AI" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="font-display font-bold text-lg text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-1">

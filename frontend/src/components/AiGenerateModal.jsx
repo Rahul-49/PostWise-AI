@@ -109,6 +109,7 @@ const AiGenerateModal = ({ isOpen, onClose, onGenerated }) => {
         brandId: targetBrandId,
         topic: customTopic || `${brand?.name || 'Brand'} - ${CAMPAIGN_PRESETS.find(c => c.id === campaignType)?.title || 'Campaign'}`,
         month,
+        platforms: targetPlatforms,
       });
 
       if (onGenerated) {

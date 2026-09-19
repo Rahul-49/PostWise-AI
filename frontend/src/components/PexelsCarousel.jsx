@@ -8,14 +8,23 @@ export const PexelsCarousel = ({ photos, className = '', onSelectPhoto, selected
     return null;
   }
 
+  const handleSelect = (idx) => {
+    setCurrentIndex(idx);
+    if (onSelectPhoto && photos[idx]) {
+      onSelectPhoto(photos[idx]);
+    }
+  };
+
   const next = (e) => {
     e?.stopPropagation();
-    setCurrentIndex((prev) => (prev + 1) % photos.length);
+    const newIdx = (currentIndex + 1) % photos.length;
+    handleSelect(newIdx);
   };
 
   const prev = (e) => {
     e?.stopPropagation();
-    setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
+    const newIdx = (currentIndex - 1 + photos.length) % photos.length;
+    handleSelect(newIdx);
   };
 
   return (

@@ -47,7 +47,7 @@ function parseMonthAndYear(month, year, start) {
 exports.generateCalendar = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { brandId, startDate, month, year, topicNiche, goals } = req.body;
+    const { brandId, startDate, month, year, topicNiche, goals, platforms } = req.body;
 
     if (!brandId) {
       return res.status(400).json({ message: 'brandId is required' });
@@ -72,7 +72,7 @@ exports.generateCalendar = async (req, res) => {
           industry: topicNiche || 'Technology',
           targetAudience: 'Creators & Entrepreneurs',
           tone: 'Professional',
-          platforms: ['Instagram', 'LinkedIn', 'X'],
+          platforms: platforms || ['Instagram', 'LinkedIn', 'X'],
         };
       }
     } else {
@@ -94,7 +94,7 @@ exports.generateCalendar = async (req, res) => {
           industry: topicNiche || 'Sustainable Wellness & Beauty',
           targetAudience: 'Eco-conscious consumers, skincare lovers, wellness enthusiasts',
           tone: 'Inspirational',
-          platforms: ['Instagram', 'LinkedIn', 'X/Twitter'],
+          platforms: platforms || ['Instagram', 'LinkedIn', 'X/Twitter'],
           keywords: ['sustainability', 'cleanbeauty', 'organic', 'wellness', 'crueltyfree'],
           description: 'Eco-friendly and organic wellness products designed for everyday mindfulness.',
         });
@@ -107,6 +107,7 @@ exports.generateCalendar = async (req, res) => {
       startDate: validStart,
       month: targetMonth,
       year: targetYear,
+      platforms,
     });
 
     const monthNames = [
@@ -129,6 +130,7 @@ exports.generateCalendar = async (req, res) => {
         topicNiche: topicNiche || brand.industry || '',
         goals: goals || brand.postingGoals || '',
         postsCount: generatedPostsData.length,
+        platforms: platforms || ['Instagram', 'LinkedIn', 'X'],
         createdAt: new Date(),
       };
       mockCalendars.push(newCalendar);
@@ -169,6 +171,7 @@ exports.generateCalendar = async (req, res) => {
       topicNiche: topicNiche || brand.industry || '',
       goals: goals || brand.postingGoals || '',
       postsCount: generatedPostsData.length,
+      platforms: platforms || ['Instagram', 'LinkedIn', 'X'],
     });
 
     const postsToInsert = generatedPostsData.map((p, idx) => ({

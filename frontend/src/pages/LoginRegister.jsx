@@ -46,8 +46,8 @@ const LoginRegister = () => {
         {/* Logo & Header */}
         <div className="text-center mb-6">
           <Link to="/" className="inline-flex items-center gap-2.5 mb-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 font-bold text-xl">
-              P
+            <div className="w-10 h-10 rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-md shadow-indigo-500/15 flex items-center justify-center shrink-0">
+              <img src="/logo.png" alt="PostWise-AI" className="w-full h-full object-cover" />
             </div>
             <span className="font-display font-extrabold text-2xl text-slate-900 dark:text-slate-100 tracking-tight">
               PostWise<span className="text-indigo-600 dark:text-indigo-400">.ai</span>

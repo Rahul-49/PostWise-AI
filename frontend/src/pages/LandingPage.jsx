@@ -75,8 +75,8 @@ const LandingPage = () => {
       <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25 font-extrabold text-xl group-hover:scale-105 transition-transform">
-              P
+            <div className="w-10 h-10 rounded-2xl overflow-hidden bg-white/10 border border-white/20 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 shadow-lg shadow-indigo-500/20">
+              <img src="/logo.png" alt="PostWise-AI" className="w-full h-full object-cover" />
             </div>
             <span className="font-display font-extrabold text-xl tracking-tight text-white">
               PostWise<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-pink-400">.ai</span>

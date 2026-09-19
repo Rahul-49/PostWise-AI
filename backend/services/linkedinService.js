@@ -104,8 +104,105 @@ async function refreshTokenIfNeeded(tokenDoc) {
   return tokenDoc;
 }
 
-async function publishPost({ accessToken, authorUrn, post }) {
+function downloadImageBuffer(imageUrl) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(imageUrl);
+    const client = url.protocol === 'https:' ? https : require('http');
+    client.get(imageUrl, (res) => {
+      // Follow redirects if any (e.g. 301, 302)
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return downloadImageBuffer(res.headers.location).then(resolve).catch(reject);
+      }
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        return reject(new Error(`Failed to download image: status ${res.statusCode}`));
+      }
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        const contentType = res.headers['content-type'] || 'image/jpeg';
+        resolve({ buffer, contentType });
+      });
+    }).on('error', reject);
+  });
+}
+
+async function uploadImageToLinkedIn({ accessToken, authorUrn, imageUrl }) {
+  try {
+    // 1. Download image from URL (e.g. Pexels)
+    const { buffer, contentType } = await downloadImageBuffer(imageUrl);
+
+    // 2. Initialize upload with LinkedIn
+    const initPayload = JSON.stringify({
+      initializeUploadRequest: {
+        owner: authorUrn,
+      },
+    });
+
+    const initOptions = {
+      hostname: 'api.linkedin.com',
+      path: '/rest/images?action=initializeUpload',
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(initPayload),
+        'LinkedIn-Version': '202603',
+        'X-Restli-Protocol-Version': '2.0.0',
+      },
+    };
+
+    const { data: initDataStr } = await httpsRequest(initOptions, initPayload);
+    const initData = JSON.parse(initDataStr);
+    const uploadUrl = initData.value?.uploadUrl;
+    const imageUrn = initData.value?.image;
+
+    if (!uploadUrl || !imageUrn) {
+      console.warn('[LinkedIn Service] Missing uploadUrl or imageUrn from initializeUpload:', initDataStr);
+      return null;
+    }
+
+    // 3. Upload binary buffer to the provided uploadUrl
+    const uploadParsedUrl = new URL(uploadUrl);
+    const uploadOptions = {
+      hostname: uploadParsedUrl.hostname,
+      path: uploadParsedUrl.pathname + uploadParsedUrl.search,
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': contentType || 'image/jpeg',
+        'Content-Length': buffer.length,
+      },
+    };
+
+    await new Promise((resolve, reject) => {
+      const client = uploadParsedUrl.protocol === 'https:' ? https : require('http');
+      const req = client.request(uploadOptions, (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve();
+        } else {
+          let errData = '';
+          res.on('data', (d) => (errData += d));
+          res.on('end', () => reject(new Error(`Image upload failed: ${res.statusCode} ${errData}`)));
+        }
+      });
+      req.on('error', reject);
+      req.write(buffer);
+      req.end();
+    });
+
+    console.log(`[LinkedIn Service] Successfully uploaded image to LinkedIn: ${imageUrn}`);
+    return imageUrn;
+  } catch (err) {
+    console.error('[LinkedIn Service] Failed to upload image to LinkedIn:', err);
+    return null;
+  }
+}
+
+async function publishPost({ accessToken, authorUrn, post, imageUrl }) {
   const contentText = `${post.caption}\n\n${(post.hashtags || []).join(' ')}`;
+  const targetImage = imageUrl || post.imageUrl;
+
   const payloadObj = {
     author: authorUrn,
     commentary: contentText,
@@ -118,6 +215,28 @@ async function publishPost({ accessToken, authorUrn, post }) {
     lifecycleState: 'PUBLISHED',
     isReshareDisabledByAuthor: false,
   };
+
+  // If there is an image URL (from Pexels), upload image and attach media
+  if (targetImage) {
+    try {
+      const imageUrn = await uploadImageToLinkedIn({
+        accessToken,
+        authorUrn,
+        imageUrl: targetImage,
+      });
+      if (imageUrn) {
+        payloadObj.content = {
+          media: {
+            id: imageUrn,
+            altText: post.idea || post.title || 'PostWise Social Media Visual',
+          },
+        };
+      }
+    } catch (e) {
+      console.warn('[LinkedIn Service] Image upload failed, falling back to text-only post:', e.message);
+    }
+  }
+
   const payload = JSON.stringify(payloadObj);
   const options = {
     hostname: 'api.linkedin.com',
