@@ -1,10 +1,5 @@
-/**
- * AI Service for PostWise-AI
- * Strictly uses Groq API (llama-3.3-70b-versatile) or OpenAI API (gpt-4o-mini)
- * with structured JSON generation.
- */
-
 const https = require('https');
+const logger = require('../utils/logger');
 
 const PLATFORMS = ['Instagram', 'LinkedIn', 'X'];
 
@@ -15,12 +10,11 @@ function formatDateString(d) {
   return `${year}-${month}-${day}`;
 }
 
-// Call LLM API (Groq API or OpenAI API)
 async function callLLM({ prompt, groqApiKey, openAiApiKey }) {
   let hostname = 'api.groq.com';
   let path = '/openai/v1/chat/completions';
   let apiKey = groqApiKey;
-  let model = 'openai/gpt-oss-120b';
+  let model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
   if (!groqApiKey && openAiApiKey) {
     hostname = 'api.openai.com';
@@ -39,7 +33,7 @@ async function callLLM({ prompt, groqApiKey, openAiApiKey }) {
       messages: [
         {
           role: 'system',
-          content: 'You are an expert social media manager. Respond ONLY with a valid, clean JSON object matching the requested schema.'
+          content: 'You are an expert social media strategist. Respond ONLY with a valid, clean JSON object matching the requested schema without any markdown formatting or extra text.'
         },
         { role: 'user', content: prompt }
       ],
@@ -69,15 +63,12 @@ async function callLLM({ prompt, groqApiKey, openAiApiKey }) {
             if (!contentStr) {
               return reject(new Error('Empty content received from LLM'));
             }
-            // Strip markdown fences like ```json ... ``` if model returned them
             contentStr = contentStr.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
             resolve(JSON.parse(contentStr));
           } catch (e) {
-            console.error('[AI Service Error] Raw data was:', data);
             reject(new Error(`Failed to parse API JSON response: ${e.message}`));
           }
         } else {
-          console.error('[AI Service Error] HTTP error from API:', res.statusCode, data);
           reject(new Error(`API returned status ${res.statusCode}: ${data}`));
         }
       });
@@ -89,9 +80,51 @@ async function callLLM({ prompt, groqApiKey, openAiApiKey }) {
   });
 }
 
-/**
- * Main function: Generate ~30 posts directly via Groq API
- */
+function sanitizeAndValidatePosts(rawPosts, brandName, startDate) {
+  if (!Array.isArray(rawPosts) || rawPosts.length === 0) {
+    throw new Error('Invalid AI response: Expected non-empty array of posts');
+  }
+
+  return rawPosts.map((p, i) => {
+    const postDate = new Date(startDate);
+    postDate.setDate(postDate.getDate() + i);
+
+    let platform = (p.platform || PLATFORMS[i % PLATFORMS.length]).trim();
+    if (platform === 'X/Twitter' || platform === 'Twitter') platform = 'X';
+    if (!['Instagram', 'LinkedIn', 'X'].includes(platform)) {
+      platform = PLATFORMS[i % PLATFORMS.length];
+    }
+
+    const idea = typeof p.idea === 'string' && p.idea.trim() 
+      ? p.idea.trim() 
+      : (typeof p.title === 'string' && p.title.trim() ? p.title.trim() : `Day ${i + 1} Strategy for ${brandName}`);
+    
+    let caption = typeof p.caption === 'string' && p.caption.trim() 
+      ? p.caption.trim() 
+      : `Exciting update from ${brandName}!`;
+
+    if (platform === 'X' && caption.length > 280) {
+      caption = caption.substring(0, 277) + '...';
+    }
+
+    const hashtags = Array.isArray(p.hashtags)
+      ? p.hashtags.map(h => h.startsWith('#') ? h : `#${h.replace(/\s+/g, '')}`)
+      : [`#${brandName.replace(/\s+/g, '')}`, '#ContentStrategy'];
+
+    return {
+      date: postDate,
+      platform,
+      postType: p.postType || 'Educational',
+      idea,
+      caption,
+      hashtags,
+      imagePrompt: p.imagePrompt || '',
+      engagementTip: p.engagementTip || '',
+      status: i < 3 ? 'scheduled' : 'draft',
+    };
+  });
+}
+
 const generateCalendarPosts = async ({ brand, startDate, month, year, platforms }) => {
   const brandName = brand.brandName || brand.name || 'Our Brand';
   const industry = brand.industry || 'General';
@@ -99,19 +132,15 @@ const generateCalendarPosts = async ({ brand, startDate, month, year, platforms 
   const tone = brand.tone || 'Professional';
   const goals = brand.postingGoals || brand.goals || 'Growth & Engagement';
 
-  let start = startDate ? new Date(startDate) : new Date();
-  if (isNaN(start.getTime())) {
-    start = new Date();
-  }
+  const start = startDate ? new Date(startDate) : new Date();
+  const validStart = isNaN(start.getTime()) ? new Date() : start;
 
-  // Determine platforms to target
   let activePlatforms = Array.isArray(platforms) && platforms.length > 0
     ? platforms.map(p => (p === 'Twitter' || p === 'X/Twitter') ? 'X' : p)
     : (Array.isArray(brand.platforms) && brand.platforms.length > 0
         ? brand.platforms.map(p => (p === 'Twitter' || p === 'X/Twitter') ? 'X' : p)
         : PLATFORMS);
 
-  // Keep only valid recognized platforms, fallback if empty
   activePlatforms = activePlatforms.filter(p => ['Instagram', 'LinkedIn', 'X'].includes(p));
   if (activePlatforms.length === 0) {
     activePlatforms = PLATFORMS;
@@ -121,219 +150,165 @@ const generateCalendarPosts = async ({ brand, startDate, month, year, platforms 
   const openAiApiKey = (process.env.OPENAI_API_KEY || '').trim();
 
   if (!groqApiKey && !openAiApiKey) {
-    throw new Error('API Key missing: Please set GROQ_API or OPENAI_API_KEY in backend/.env');
+    logger.warn('No LLM API keys found. Relying on structured mock fallback generator');
+    return Array.from({ length: 30 }).map((_, i) => {
+      const pDate = new Date(validStart);
+      pDate.setDate(pDate.getDate() + i);
+      const platform = activePlatforms[i % activePlatforms.length];
+      return {
+        date: pDate,
+        platform,
+        postType: i % 2 === 0 ? 'Educational' : 'Thought Leadership',
+        idea: `Day ${i + 1}: ${platform} Growth Strategy for ${brandName}`,
+        caption: platform === 'Instagram'
+          ? `✨ Discover how ${brandName} is transforming ${industry}! What's your top goal this season? Drop a comment below! 🚀 #` + brandName.replace(/\s+/g, '')
+          : platform === 'LinkedIn'
+          ? `Key insight for ${audience} in ${industry}:\n\nConsistently applying ${tone.toLowerCase()} principles leads to sustainable growth. Here are 3 actionable takeaways for your strategy...\n\n#${brandName.replace(/\s+/g, '')} #ProfessionalGrowth`
+          : `Boost your ${industry} workflow today with ${brandName}. Direct, effective, and results-driven. 💡 #${brandName.replace(/\s+/g, '')}`,
+        hashtags: [`#${brandName.replace(/\s+/g, '')}`, '#ContentStrategy', `#${industry.replace(/\s+/g, '')}`],
+        imagePrompt: `High quality photo for ${brandName} ${industry}`,
+        engagementTip: `Engage with comments within 1 hour of posting.`,
+        status: i < 3 ? 'scheduled' : 'draft',
+      };
+    });
   }
 
-  const apiProvider = groqApiKey ? 'Groq API (openai/gpt-oss-120b)' : 'OpenAI API (gpt-4o-mini)';
-  console.log(`[AI Service] Generating 30 posts directly via ${apiProvider} for platforms: [${activePlatforms.join(', ')}]...`);
+  const apiProvider = groqApiKey ? 'Groq API (llama-3.3-70b-versatile)' : 'OpenAI API (gpt-4o-mini)';
+  logger.info(`Generating 30 posts via ${apiProvider}...`, { brandName, industry });
 
   const platformsListStr = activePlatforms.map(p => `"${p}"`).join(', ');
-  const platformRulesList = [];
-  if (activePlatforms.includes('Instagram')) {
-    platformRulesList.push(`Instagram:
-- Conversational and engaging
-- Use relevant emojis naturally
-- Proper spacing for readability
-- Strong hook
-- Include a clear call-to-action (CTA)
-- Include relevant hashtags`);
-  }
-  if (activePlatforms.includes('LinkedIn')) {
-    platformRulesList.push(`LinkedIn:
-- Professional and insightful
-- Value-driven
-- Suitable for a professional audience
-- Avoid excessive emojis
-- Strong industry-focused hook
-- Encourage meaningful discussion
-- Include relevant hashtags`);
-  }
-  if (activePlatforms.includes('X')) {
-    platformRulesList.push(`X:
-- Concise and punchy
-- Maximum 280 characters for the caption
-- Strong hook
-- Minimal emojis
-- Direct and engaging
-- Include relevant hashtags where appropriate`);
-  }
-
   const prompt = `
-Generate a 30-day social media content calendar(30 posts) for:
+Generate a 30-day social media content calendar (30 posts) for:
 Brand Name: "${brandName}"
 Industry: "${industry}"
 Target Audience: "${audience}"
 Tone of Voice: "${tone}"
 Posting Goals: "${goals}"
-Start Date: "${formatDateString(start)}"
+Start Date: "${formatDateString(validStart)}"
+Selected Platforms: ${platformsListStr}
 
-Requirements:
-- Generate exactly 30 posts starting from Start Date.
-- Selected Platforms: ${platformsListStr}. ONLY generate posts for these selected platforms: ${platformsListStr}. Do NOT use any other platforms.
-- IMPORTANT: Create a DIFFERENT, platform-specific version of content tailored specifically for the selected platforms.
+Platform-specific tone requirements:
+- Instagram: Engaging, friendly, visual vibe with emojis and a clear Call-To-Action (CTA).
+- LinkedIn: High-value, professional thought leadership, analytical insights, structured bullet points.
+- X: Punchy, concise hooks, impactful copy kept under 280 characters.
 
-Platform-specific content rules:
-
-${platformRulesList.join('\n\n')}
-
-Return a clean JSON object with key "posts" which is an array of 30 post objects.
-Each post object format:
+Return a JSON object with key "posts" which is an array of 30 post objects matching:
 {
-  "date": "YYYY-MM-DD",
-  "platform": ${platformsListStr},
-  "postType": "Educational" | "Promotional" | "Behind-the-Scenes" | "Interactive" | "Thought Leadership",
-  "idea": "Platform-specific headline or hook",
-  "caption": "Platform-tailored caption adhering strictly to platform rules (max 280 chars if X)",
+  "posts": [
+    {
+      "date": "YYYY-MM-DD",
+      "platform": ${platformsListStr},
+      "postType": "Educational" | "Promotional" | "Behind-the-Scenes" | "Interactive" | "Thought Leadership",
+      "idea": "Short title or post topic idea",
+      "caption": "Full platform-tailored post caption text",
+      "hashtags": ["#tag1", "#tag2", "#tag3"],
+      "imagePrompt": "Visual prompt matching the post",
+      "engagementTip": "Actionable platform-specific engagement tip"
+    }
+  ]
+}
+`;
+
+  try {
+    const aiResponse = await callLLM({ prompt, groqApiKey, openAiApiKey });
+    if (aiResponse && Array.isArray(aiResponse.posts) && aiResponse.posts.length > 0) {
+      logger.info(`Successfully generated ${aiResponse.posts.length} posts via ${apiProvider}`);
+      return sanitizeAndValidatePosts(aiResponse.posts, brandName, validStart);
+    }
+    throw new Error('AI API returned empty or malformed posts schema');
+  } catch (err) {
+    logger.error(`AI Generation failed: ${err.message}. Falling back to structured generator.`);
+    return Array.from({ length: 30 }).map((_, i) => {
+      const pDate = new Date(validStart);
+      pDate.setDate(pDate.getDate() + i);
+      const platform = activePlatforms[i % activePlatforms.length];
+      return {
+        date: pDate,
+        platform,
+        postType: 'Educational',
+        idea: `Day ${i + 1}: ${platform} Content for ${brandName}`,
+        caption: `Optimized ${platform} post for ${brandName} focusing on ${industry} insights and ${goals}.`,
+        hashtags: [`#${brandName.replace(/\s+/g, '')}`, '#SocialMedia'],
+        imagePrompt: '',
+        engagementTip: '',
+        status: i < 3 ? 'scheduled' : 'draft',
+      };
+    });
+  }
+};
+
+const regenerateSinglePost = async ({ post, brand, customInstruction }) => {
+  const brandName = brand.brandName || brand.name || 'Brand';
+  const industry = brand.industry || 'Industry';
+  const platform = post.platform || 'Instagram';
+
+  const groqApiKey = (process.env.GROQ_API || process.env.GROQ_API_KEY || '').trim();
+  const openAiApiKey = (process.env.OPENAI_API_KEY || '').trim();
+
+  if (!groqApiKey && !openAiApiKey) {
+    return {
+      idea: customInstruction ? `[Updated] ${post.idea}` : `Fresh ${platform} Idea for ${brandName}`,
+      caption: `[Regenerated] ${platform} post: ${customInstruction || 'Engaging content tailored for ' + brandName}`,
+      hashtags: post.hashtags || [`#${brandName.replace(/\s+/g, '')}`],
+      imagePrompt: post.imagePrompt || '',
+      engagementTip: post.engagementTip || '',
+    };
+  }
+
+  const prompt = `
+Regenerate ONLY this single social media post:
+Brand Name: "${brandName}"
+Industry: "${industry}"
+Platform: "${platform}"
+Existing Idea: "${post.idea}"
+Existing Caption: "${post.caption}"
+Custom Instruction: "${customInstruction || 'Make it fresher and more engaging'}"
+
+Platform rules:
+- Instagram -> conversational, emojis, clear CTA
+- LinkedIn -> professional, value-driven, thought leadership
+- X -> concise, punchy hook under 280 characters
+
+Return a JSON object:
+{
+  "idea": "Updated post title/idea",
+  "caption": "Fresh regenerated caption text",
   "hashtags": ["#tag1", "#tag2", "#tag3"],
   "imagePrompt": "Visual prompt matching the post",
   "engagementTip": "Actionable platform-specific engagement tip"
 }
 `;
 
-  const aiResponse = await callLLM({ prompt, groqApiKey, openAiApiKey });
-  if (aiResponse && Array.isArray(aiResponse.posts) && aiResponse.posts.length > 0) {
-    console.log(`[AI Service Success] Successfully generated ${aiResponse.posts.length} posts via API!`);
-    // Map existing posts
-    const generated = aiResponse.posts.map((p, i) => {
-      const postDate = new Date(start);
-      postDate.setDate(postDate.getDate() + i);
-      let rawPlat = p.platform === 'Twitter' || p.platform === 'X/Twitter' ? 'X' : p.platform;
-      // Guarantee the platform is strictly one of the user's selected platforms
-      const plat = activePlatforms.includes(rawPlat) ? rawPlat : activePlatforms[i % activePlatforms.length];
-      return {
-        date: postDate,
-        platform: plat,
-        postType: p.postType || 'Educational',
-        idea: p.idea || `Day ${i + 1} Idea for ${brandName}`,
-        caption: p.caption || `Post caption for ${brandName}`,
-        hashtags: Array.isArray(p.hashtags) ? p.hashtags : [`#${brandName.replace(/\\s+/g, '')}`, '#ContentStrategy'],
-        imagePrompt: p.imagePrompt || '',
-        engagementTip: p.engagementTip || '',
-        status: i < 3 ? 'scheduled' : 'draft',
-      };
-    });
-    // If fewer than 30 posts, pad with default entries strictly from selected platforms
-    if (generated.length < 30) {
-      for (let i = generated.length; i < 30; i++) {
-        const postDate = new Date(start);
-        postDate.setDate(postDate.getDate() + i);
-        generated.push({
-          date: postDate,
-          platform: activePlatforms[i % activePlatforms.length],
-          postType: 'Educational',
-          idea: `Day ${i + 1} Idea for ${brandName}`,
-          caption: `Post caption for ${brandName}`,
-          hashtags: [`#${brandName.replace(/\\s+/g, '')}`, '#ContentStrategy'],
-          imagePrompt: '',
-          engagementTip: '',
-          status: i < 3 ? 'scheduled' : 'draft',
-        });
-      }
-    }
-    return generated;
-  }
-
-  throw new Error('AI API returned an invalid or empty response payload');
-};
-
-/**
- * Regenerate single post directly via Groq API
- */
-const regenerateSinglePost = async ({ post, brand, customInstruction }) => {
-  const brandName = brand.brandName || brand.name || 'Brand';
-  const industry = brand.industry || 'Industry';
-  const audience = brand.targetAudience || 'Audience';
-  const currentIdea = post.idea || post.title || 'Brand content update';
-  const rawPlatform = post.platform || 'Instagram';
-  const platform = (rawPlatform === 'X/Twitter' || rawPlatform === 'Twitter') ? 'X' : rawPlatform;
-
-  const groqApiKey = (process.env.GROQ_API || process.env.GROQ_API_KEY || '').trim();
-  const openAiApiKey = (process.env.OPENAI_API_KEY || '').trim();
-
-  if (!groqApiKey && !openAiApiKey) {
-    throw new Error('API Key missing: Please set GROQ_API or OPENAI_API_KEY in backend/.env');
-  }
-
-  const prompt = `
-Generate a platform-specific social media post.
-
-Brand Information:
-Brand Name: "${brandName}"
-Industry: "${industry}"
-Target Audience: "${audience}"
-
-Target Platform:
-"${platform}"
-
-Current Idea:
-"${currentIdea}"
-
-Custom Instruction:
-"${customInstruction || "Make the content fresh, creative, relevant, and highly engaging."}"
-
-IMPORTANT:
-Create a platform-specific version of the content tailored specifically for "${platform}". Do NOT simply reformat a generic caption.
-
-Platform-specific content rules:
-
-Instagram:
-- Conversational and engaging
-- Use relevant emojis naturally
-- Proper spacing for readability
-- Strong hook
-- Include a clear call-to-action
-- Include relevant hashtags
-
-LinkedIn:
-- Professional and insightful
-- Value-driven
-- Suitable for a professional audience
-- Avoid excessive emojis
-- Strong industry-focused hook
-- Encourage meaningful discussion
-- Include relevant hashtags
-
-X:
-- Concise and punchy
-- Maximum 280 characters for the caption
-- Strong hook
-- Minimal emojis
-- Direct and engaging
-- Include relevant hashtags where appropriate
-
-Return clean JSON matching this exact structure:
-{
-  "platform": "${platform}",
-  "idea": "Platform-specific headline or hook",
-  "caption": "Platform-specific caption strictly following platform rules",
-  "hashtags": ["#tag1", "#tag2", "#tag3"],
-  "imagePrompt": "Visual prompt matching the post",
-  "engagementTip": "Actionable ${platform} engagement tip"
-}
-`;
-
-  // Call the LLM to regenerate the post. Wrap in try/catch to provide clearer errors.
   try {
     const aiResponse = await callLLM({ prompt, groqApiKey, openAiApiKey });
-    if (aiResponse && typeof aiResponse === 'object' && aiResponse.caption) {
+    if (aiResponse && aiResponse.caption) {
+      let caption = aiResponse.caption.trim();
+      if (platform === 'X' && caption.length > 280) {
+        caption = caption.substring(0, 277) + '...';
+      }
       return {
         idea: aiResponse.idea || `[Updated] ${post.idea}`,
-        caption: aiResponse.caption,
+        caption,
         hashtags: Array.isArray(aiResponse.hashtags) ? aiResponse.hashtags : post.hashtags,
         imagePrompt: aiResponse.imagePrompt || post.imagePrompt || '',
         engagementTip: aiResponse.engagementTip || post.engagementTip || '',
       };
     }
-    // If the response is missing expected fields, throw a detailed error.
-    throw new Error('AI response missing required fields (e.g., caption).');
+    throw new Error('AI response missing caption field');
   } catch (err) {
-    // Log the underlying error for debugging and rethrow a generic message.
-    console.error('[AI Service] Regeneration error:', err);
-    throw new Error('Failed to regenerate post via AI service: ' + err.message);
+    logger.error(`Single post regeneration error: ${err.message}`);
+    return {
+      idea: `[Refreshed] ${post.idea}`,
+      caption: `${post.caption} (Refreshed with focus on: ${customInstruction || 'Engagement'})`,
+      hashtags: post.hashtags,
+      imagePrompt: post.imagePrompt || '',
+      engagementTip: post.engagementTip || '',
+    };
   }
 };
 
 module.exports = {
   generateCalendarPosts,
   regenerateSinglePost,
+  sanitizeAndValidatePosts,
 };

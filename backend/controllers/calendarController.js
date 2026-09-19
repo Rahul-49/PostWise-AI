@@ -3,6 +3,9 @@ const Post = require('../models/Post');
 const Brand = require('../models/Brand');
 const { generateCalendarPosts } = require('../services/aiService');
 const { getDBStatus } = require('../config/db');
+const logger = require('../utils/logger');
+const jobService = require('../services/jobService');
+const mongoose = require('mongoose');
 
 const mockCalendars = [];
 const mockPosts = [];
@@ -44,6 +47,51 @@ function parseMonthAndYear(month, year, start) {
   return { targetMonth, targetYear };
 }
 
+async function resolveBrand(userId, brandId, topicNiche, platforms) {
+  const { useMockStore } = getDBStatus();
+  let brand;
+
+  if (useMockStore) {
+    const { mockBrands } = require('./brandController');
+    brand = mockBrands.find(b => b._id === brandId && b.user === userId);
+    if (!brand) {
+      brand = {
+        _id: brandId || 'mock_brand_default',
+        brandName: 'Demo Brand',
+        name: 'Demo Brand',
+        industry: topicNiche || 'Technology',
+        targetAudience: 'Creators & Entrepreneurs',
+        tone: 'Professional',
+        platforms: platforms || ['Instagram', 'LinkedIn', 'X'],
+      };
+    }
+    return brand;
+  }
+
+  if (brandId && mongoose.Types.ObjectId.isValid(brandId)) {
+    brand = await Brand.findOne({ _id: brandId, user: userId });
+  }
+
+  if (!brand) {
+    brand = await Brand.findOne({ user: userId }).sort({ createdAt: -1 });
+  }
+
+  if (!brand) {
+    brand = await Brand.create({
+      user: userId,
+      name: 'EcoGlow Organics',
+      industry: topicNiche || 'Sustainable Wellness & Beauty',
+      targetAudience: 'Eco-conscious consumers, skincare lovers, wellness enthusiasts',
+      tone: 'Inspirational',
+      platforms: platforms || ['Instagram', 'LinkedIn', 'X'],
+      keywords: ['sustainability', 'cleanbeauty', 'organic', 'wellness', 'crueltyfree'],
+      description: 'Eco-friendly and organic wellness products designed for everyday mindfulness.',
+    });
+  }
+
+  return brand;
+}
+
 exports.generateCalendar = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -57,51 +105,9 @@ exports.generateCalendar = async (req, res) => {
     const validStart = isNaN(start.getTime()) ? new Date() : start;
     const { targetMonth, targetYear } = parseMonthAndYear(month, year, validStart);
 
-    const { useMockStore } = getDBStatus();
-    const mongoose = require('mongoose');
+    logger.info('Calendar generation requested', { userId, brandId, month: targetMonth, year: targetYear });
 
-    let brand;
-    if (useMockStore) {
-      const { mockBrands } = require('./brandController');
-      brand = mockBrands.find(b => b._id === brandId && b.user === userId);
-      if (!brand) {
-        brand = {
-          _id: brandId || 'mock_brand_default',
-          brandName: 'Demo Brand',
-          name: 'Demo Brand',
-          industry: topicNiche || 'Technology',
-          targetAudience: 'Creators & Entrepreneurs',
-          tone: 'Professional',
-          platforms: platforms || ['Instagram', 'LinkedIn', 'X'],
-        };
-      }
-    } else {
-      // 1. Try finding by brandId if it is a valid MongoDB ObjectId
-      if (brandId && mongoose.Types.ObjectId.isValid(brandId)) {
-        brand = await Brand.findOne({ _id: brandId, user: userId });
-      }
-
-      // 2. If not found (e.g. frontend sent mock ID 'brand_ecoglow_1'), find user's latest brand
-      if (!brand) {
-        brand = await Brand.findOne({ user: userId }).sort({ createdAt: -1 });
-      }
-
-      // 3. If user has no brand at all, auto-create a default brand profile in MongoDB
-      if (!brand) {
-        brand = await Brand.create({
-          user: userId,
-          name: 'EcoGlow Organics',
-          industry: topicNiche || 'Sustainable Wellness & Beauty',
-          targetAudience: 'Eco-conscious consumers, skincare lovers, wellness enthusiasts',
-          tone: 'Inspirational',
-          platforms: platforms || ['Instagram', 'LinkedIn', 'X/Twitter'],
-          keywords: ['sustainability', 'cleanbeauty', 'organic', 'wellness', 'crueltyfree'],
-          description: 'Eco-friendly and organic wellness products designed for everyday mindfulness.',
-        });
-      }
-    }
-
-    // Generate ~30 posts
+    const brand = await resolveBrand(userId, brandId, topicNiche, platforms);
     const generatedPostsData = await generateCalendarPosts({
       brand,
       startDate: validStart,
@@ -116,6 +122,8 @@ exports.generateCalendar = async (req, res) => {
     ];
     const bName = brand.brandName || brand.name || 'Brand';
     const calendarTitle = `${bName} - ${monthNames[targetMonth - 1] || 'Month'} ${targetYear}`;
+
+    const { useMockStore } = getDBStatus();
 
     if (useMockStore) {
       const calendarId = 'mock_cal_' + Date.now();
@@ -186,15 +194,160 @@ exports.generateCalendar = async (req, res) => {
 
     const createdPosts = await Post.insertMany(postsToInsert);
 
+    logger.info('Calendar generated successfully', { calendarId: calendar._id, postsCount: createdPosts.length });
+
     return res.status(201).json({
       message: 'AI Content Calendar generated successfully',
       calendar,
       posts: createdPosts,
     });
   } catch (error) {
-    console.error('Calendar Generation Error:', error);
+    logger.error('Calendar Generation Error', { error: error.message, stack: error.stack });
     return res.status(500).json({ message: 'Failed to generate content calendar', error: error.message });
   }
+};
+
+exports.generateCalendarAsync = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { brandId, startDate, month, year, topicNiche, goals, platforms } = req.body;
+
+    if (!brandId) {
+      return res.status(400).json({ message: 'brandId is required' });
+    }
+
+    const jobId = `job_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    jobService.createJob(jobId, { userId, brandId });
+
+    res.status(202).json({
+      message: 'Calendar generation job accepted',
+      jobId,
+      statusUrl: `/api/calendars/jobs/${jobId}`,
+    });
+
+    // Execute background worker
+    (async () => {
+      try {
+        jobService.updateJob(jobId, { status: 'processing', progress: 10 });
+        const start = startDate ? new Date(startDate) : new Date();
+        const validStart = isNaN(start.getTime()) ? new Date() : start;
+        const { targetMonth, targetYear } = parseMonthAndYear(month, year, validStart);
+
+        const brand = await resolveBrand(userId, brandId, topicNiche, platforms);
+        jobService.updateJob(jobId, { progress: 40 });
+
+        const generatedPostsData = await generateCalendarPosts({
+          brand,
+          startDate: validStart,
+          month: targetMonth,
+          year: targetYear,
+          platforms,
+        });
+        jobService.updateJob(jobId, { progress: 80 });
+
+        const monthNames = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const bName = brand.brandName || brand.name || 'Brand';
+        const calendarTitle = `${bName} - ${monthNames[targetMonth - 1] || 'Month'} ${targetYear}`;
+
+        const { useMockStore } = getDBStatus();
+
+        if (useMockStore) {
+          const calendarId = 'mock_cal_' + Date.now();
+          const newCalendar = {
+            _id: calendarId,
+            user: userId,
+            brand: brandId,
+            title: calendarTitle,
+            month: targetMonth,
+            year: targetYear,
+            startDate: validStart,
+            topicNiche: topicNiche || brand.industry || '',
+            goals: goals || brand.postingGoals || '',
+            postsCount: generatedPostsData.length,
+            platforms: platforms || ['Instagram', 'LinkedIn', 'X'],
+            createdAt: new Date(),
+          };
+          mockCalendars.push(newCalendar);
+
+          const createdPosts = generatedPostsData.map((p, idx) => ({
+            _id: `mock_post_${Date.now()}_${idx}`,
+            calendar: calendarId,
+            user: userId,
+            brand: brandId,
+            date: p.date,
+            platform: (p.platform === 'X/Twitter' || p.platform === 'Twitter') ? 'X' : (p.platform || 'Instagram'),
+            postType: p.postType || 'Educational',
+            idea: p.idea || p.title || `Day ${idx + 1} Content Idea`,
+            title: p.idea || p.title || `Day ${idx + 1} Content Idea`,
+            caption: p.caption || `Post caption for ${bName}`,
+            hashtags: p.hashtags || [],
+            status: p.status || 'draft',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }));
+          mockPosts.push(...createdPosts);
+
+          jobService.updateJob(jobId, {
+            status: 'completed',
+            progress: 100,
+            result: { calendar: newCalendar, posts: createdPosts },
+          });
+          return;
+        }
+
+        const calendar = await Calendar.create({
+          user: userId,
+          brand: brand._id,
+          title: calendarTitle,
+          month: targetMonth,
+          year: targetYear,
+          startDate: validStart,
+          topicNiche: topicNiche || brand.industry || '',
+          goals: goals || brand.postingGoals || '',
+          postsCount: generatedPostsData.length,
+          platforms: platforms || ['Instagram', 'LinkedIn', 'X'],
+        });
+
+        const postsToInsert = generatedPostsData.map((p, idx) => ({
+          ...p,
+          calendar: calendar._id,
+          user: userId,
+          brand: brand._id,
+          idea: p.idea || p.title || `Day ${idx + 1} Content Idea`,
+          caption: p.caption || `Post caption for ${bName}`,
+          platform: (p.platform === 'X/Twitter' || p.platform === 'Twitter') ? 'X' : (p.platform || 'Instagram'),
+        }));
+
+        const createdPosts = await Post.insertMany(postsToInsert);
+
+        jobService.updateJob(jobId, {
+          status: 'completed',
+          progress: 100,
+          result: { calendar, posts: createdPosts },
+        });
+      } catch (err) {
+        logger.error('Async Job Execution Failed', { jobId, error: err.message });
+        jobService.updateJob(jobId, {
+          status: 'failed',
+          error: err.message,
+        });
+      }
+    })();
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to initiate async calendar job' });
+  }
+};
+
+exports.getJobStatus = async (req, res) => {
+  const { jobId } = req.params;
+  const job = jobService.getJob(jobId);
+  if (!job) {
+    return res.status(404).json({ message: 'Job not found or expired' });
+  }
+  return res.json({ job });
 };
 
 exports.getCalendars = async (req, res) => {
@@ -210,6 +363,7 @@ exports.getCalendars = async (req, res) => {
     const calendars = await Calendar.find({ user: userId }).sort({ createdAt: -1 }).populate('brand', 'brandName name industry tone');
     return res.json({ calendars });
   } catch (error) {
+    logger.error('Failed to fetch calendars', { error: error.message });
     return res.status(500).json({ message: 'Failed to fetch calendars' });
   }
 };
@@ -227,12 +381,17 @@ exports.getCalendarById = async (req, res) => {
       return res.json({ calendar, posts });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Calendar not found' });
+    }
+
     const calendar = await Calendar.findOne({ _id: id, user: userId }).populate('brand');
     if (!calendar) return res.status(404).json({ message: 'Calendar not found or unauthorized' });
 
     const posts = await Post.find({ calendar: id, user: userId }).sort({ date: 1 });
     return res.json({ calendar, posts });
   } catch (error) {
+    logger.error('Failed to fetch calendar detail', { error: error.message });
     return res.status(500).json({ message: 'Failed to fetch calendar detail' });
   }
 };
@@ -251,6 +410,9 @@ exports.exportJSON = async (req, res) => {
       if (!calendar) return res.status(404).json({ message: 'Calendar not found' });
       posts = mockPosts.filter(p => p.calendar === id && p.user === userId);
     } else {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({ message: 'Calendar not found' });
+      }
       calendar = await Calendar.findOne({ _id: id, user: userId }).populate('brand');
       if (!calendar) return res.status(404).json({ message: 'Calendar not found' });
       posts = await Post.find({ calendar: id, user: userId }).sort({ date: 1 });
@@ -277,6 +439,7 @@ exports.exportJSON = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="calendar_${id}.json"`);
     return res.send(JSON.stringify(exportData, null, 2));
   } catch (error) {
+    logger.error('Failed to export calendar JSON', { error: error.message });
     return res.status(500).json({ message: 'Failed to export calendar JSON', error: error.message });
   }
 };
@@ -295,6 +458,9 @@ exports.exportCSV = async (req, res) => {
       if (!calendar) return res.status(404).json({ message: 'Calendar not found' });
       posts = mockPosts.filter(p => p.calendar === id && p.user === userId);
     } else {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({ message: 'Calendar not found' });
+      }
       calendar = await Calendar.findOne({ _id: id, user: userId });
       if (!calendar) return res.status(404).json({ message: 'Calendar not found' });
       posts = await Post.find({ calendar: id, user: userId }).sort({ date: 1 });
@@ -324,6 +490,7 @@ exports.exportCSV = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="calendar_${id}.csv"`);
     return res.send(csvContent);
   } catch (error) {
+    logger.error('Failed to export calendar CSV', { error: error.message });
     return res.status(500).json({ message: 'Failed to export calendar CSV', error: error.message });
   }
 };
@@ -344,12 +511,17 @@ exports.deleteCalendar = async (req, res) => {
       return res.json({ message: 'Calendar deleted successfully' });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Calendar not found' });
+    }
+
     const calendar = await Calendar.findOneAndDelete({ _id: id, user: userId });
     if (!calendar) return res.status(404).json({ message: 'Calendar not found' });
 
     await Post.deleteMany({ calendar: id, user: userId });
     return res.json({ message: 'Calendar deleted successfully' });
   } catch (error) {
+    logger.error('Failed to delete calendar', { error: error.message });
     return res.status(500).json({ message: 'Failed to delete calendar' });
   }
 };

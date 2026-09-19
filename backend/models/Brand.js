@@ -61,4 +61,7 @@ const BrandSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+BrandSchema.index({ user: 1, name: 1 });
+
 module.exports = mongoose.model('Brand', BrandSchema);
+

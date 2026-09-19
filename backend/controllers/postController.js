@@ -5,6 +5,7 @@ const { regenerateSinglePost } = require('../services/aiService');
 const { getDBStatus } = require('../config/db');
 const LinkedInToken = require('../models/LinkedInToken');
 const linkedinService = require('../services/linkedinService');
+const logger = require('../utils/logger');
 
 exports.createPost = async (req, res) => {
   try {
@@ -16,8 +17,32 @@ exports.createPost = async (req, res) => {
       return res.status(400).json({ message: 'calendarId, date, title/idea, caption, and platform are required' });
     }
 
-
+    const { useMockStore } = getDBStatus();
     let effectiveBrandId = brandId;
+
+    if (useMockStore) {
+      const mockPost = {
+        _id: 'mock_post_' + Date.now(),
+        calendar: calendarId,
+        user: userId,
+        brand: brandId || 'mock_brand_default',
+        date: new Date(date),
+        timeSlot: timeSlot || '09:00 AM',
+        platform: (platform === 'X/Twitter' || platform === 'Twitter') ? 'X' : platform,
+        idea: postIdea,
+        title: postIdea,
+        caption,
+        hashtags: Array.isArray(hashtags) ? hashtags : (hashtags ? hashtags.split(',').map(h => h.trim()) : []),
+        postType: postType || 'Educational',
+        status: status || 'draft',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const { mockPosts } = require('./calendarController');
+      mockPosts.push(mockPost);
+      return res.status(201).json({ message: 'Post created successfully', post: mockPost });
+    }
+
     if (!effectiveBrandId || !mongoose.Types.ObjectId.isValid(effectiveBrandId)) {
       const userBrand = await Brand.findOne({ user: userId }).sort({ createdAt: -1 });
       if (userBrand) {
@@ -51,8 +76,10 @@ exports.createPost = async (req, res) => {
       status: status || 'draft',
     });
 
+    logger.info('Post created successfully', { postId: post._id, userId, platform: post.platform });
     return res.status(201).json({ message: 'Post created successfully', post });
   } catch (error) {
+    logger.error('Failed to create post', { error: error.message });
     return res.status(500).json({ message: 'Failed to create post', error: error.message });
   }
 };
@@ -63,6 +90,33 @@ exports.updatePost = async (req, res) => {
     const userId = req.user.id;
     const { title, idea, caption, hashtags, platform, timeSlot, status, postType, imagePrompt, engagementTip, date, imageUrl } = req.body;
 
+    const { useMockStore } = getDBStatus();
+
+    if (useMockStore) {
+      const { mockPosts } = require('./calendarController');
+      const index = mockPosts.findIndex(p => p._id === id && p.user === userId);
+      if (index === -1) return res.status(404).json({ message: 'Post not found' });
+
+      mockPosts[index] = {
+        ...mockPosts[index],
+        idea: idea !== undefined ? idea : (title !== undefined ? title : mockPosts[index].idea),
+        caption: caption !== undefined ? caption : mockPosts[index].caption,
+        platform: platform !== undefined ? ((platform === 'X/Twitter' || platform === 'Twitter') ? 'X' : platform) : mockPosts[index].platform,
+        timeSlot: timeSlot !== undefined ? timeSlot : mockPosts[index].timeSlot,
+        status: status !== undefined ? status : mockPosts[index].status,
+        postType: postType !== undefined ? postType : mockPosts[index].postType,
+        imagePrompt: imagePrompt !== undefined ? imagePrompt : mockPosts[index].imagePrompt,
+        engagementTip: engagementTip !== undefined ? engagementTip : mockPosts[index].engagementTip,
+        date: date !== undefined ? new Date(date) : mockPosts[index].date,
+        hashtags: hashtags !== undefined ? (Array.isArray(hashtags) ? hashtags : hashtags.split(',').map(h => h.trim())) : mockPosts[index].hashtags,
+        updatedAt: new Date(),
+      };
+      return res.json({ message: 'Post updated successfully', post: mockPosts[index] });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
 
     const updatedIdea = idea !== undefined ? idea : title;
     const updateFields = {};
@@ -90,8 +144,10 @@ exports.updatePost = async (req, res) => {
 
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
+    logger.info('Post updated', { postId: id, userId });
     return res.json({ message: 'Post updated successfully', post });
   } catch (error) {
+    logger.error('Failed to update post', { error: error.message });
     return res.status(500).json({ message: 'Failed to update post', error: error.message });
   }
 };
@@ -102,6 +158,28 @@ exports.regeneratePost = async (req, res) => {
     const userId = req.user.id;
     const { customInstruction } = req.body;
 
+    const { useMockStore } = getDBStatus();
+
+    if (useMockStore) {
+      const { mockPosts } = require('./calendarController');
+      const index = mockPosts.findIndex(p => p._id === id && p.user === userId);
+      if (index === -1) return res.status(404).json({ message: 'Post not found' });
+
+      const post = mockPosts[index];
+      const brand = { name: 'Brand', industry: 'General', tone: 'Professional' };
+      const regeneratedData = await regenerateSinglePost({ post, brand, customInstruction });
+
+      post.idea = regeneratedData.idea || post.idea;
+      post.caption = regeneratedData.caption || post.caption;
+      post.hashtags = regeneratedData.hashtags || post.hashtags;
+      post.updatedAt = new Date();
+
+      return res.json({ message: 'Post content regenerated successfully', post });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
 
     let post = await Post.findOne({ _id: id, user: userId });
     if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -123,9 +201,10 @@ exports.regeneratePost = async (req, res) => {
     if (regeneratedData.engagementTip) post.engagementTip = regeneratedData.engagementTip;
     await post.save();
 
+    logger.info('Post content regenerated', { postId: id, userId });
     return res.json({ message: 'Post content regenerated successfully', post });
   } catch (error) {
-    console.error('Post Regeneration Error:', error);
+    logger.error('Post Regeneration Error', { error: error.message });
     return res.status(500).json({ message: 'Failed to regenerate post content', error: error.message });
   }
 };
@@ -140,6 +219,23 @@ exports.reschedulePost = async (req, res) => {
       return res.status(400).json({ message: 'New date is required for rescheduling' });
     }
 
+    const { useMockStore } = getDBStatus();
+
+    if (useMockStore) {
+      const { mockPosts } = require('./calendarController');
+      const index = mockPosts.findIndex(p => p._id === id && p.user === userId);
+      if (index === -1) return res.status(404).json({ message: 'Post not found' });
+
+      mockPosts[index].date = new Date(date);
+      if (timeSlot) mockPosts[index].timeSlot = timeSlot;
+      mockPosts[index].updatedAt = new Date();
+
+      return res.json({ message: 'Post rescheduled successfully', post: mockPosts[index] });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
 
     const updateObj = { date: new Date(date) };
     if (timeSlot) updateObj.timeSlot = timeSlot;
@@ -152,8 +248,10 @@ exports.reschedulePost = async (req, res) => {
 
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
+    logger.info('Post rescheduled successfully', { postId: id, newDate: date });
     return res.json({ message: 'Post rescheduled successfully', post });
   } catch (error) {
+    logger.error('Failed to reschedule post', { error: error.message });
     return res.status(500).json({ message: 'Failed to reschedule post', error: error.message });
   }
 };
@@ -163,12 +261,27 @@ exports.deletePost = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
+    const { useMockStore } = getDBStatus();
+
+    if (useMockStore) {
+      const { mockPosts } = require('./calendarController');
+      const index = mockPosts.findIndex(p => p._id === id && p.user === userId);
+      if (index === -1) return res.status(404).json({ message: 'Post not found' });
+      mockPosts.splice(index, 1);
+      return res.json({ message: 'Post deleted successfully' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
 
     const post = await Post.findOneAndDelete({ _id: id, user: userId });
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
+    logger.info('Post deleted successfully', { postId: id, userId });
     return res.json({ message: 'Post deleted successfully' });
   } catch (error) {
+    logger.error('Failed to delete post', { error: error.message });
     return res.status(500).json({ message: 'Failed to delete post' });
   }
 };
@@ -179,24 +292,35 @@ exports.publishToLinkedIn = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const post = await Post.findOne({ _id: id, user: userId });
+    const { useMockStore } = getDBStatus();
+
+    let post;
+    if (useMockStore) {
+      const { mockPosts } = require('./calendarController');
+      post = mockPosts.find(p => p._id === id && p.user === userId);
+    } else {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+      post = await Post.findOne({ _id: id, user: userId });
+    }
+
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
     let accessToken;
 
-    // 1. Try DB token first
-    const tokenDoc = await LinkedInToken.findOne({ user: userId });
-    if (tokenDoc) {
-      // Refresh only if expiresAt and refreshToken exist
-      if (tokenDoc.expiresAt && tokenDoc.refreshToken) {
-        const validToken = await linkedinService.refreshTokenIfNeeded(tokenDoc);
-        accessToken = validToken.accessToken;
-      } else {
-        accessToken = tokenDoc.accessToken;
+    if (!useMockStore) {
+      const tokenDoc = await LinkedInToken.findOne({ user: userId });
+      if (tokenDoc) {
+        if (tokenDoc.expiresAt && tokenDoc.refreshToken) {
+          const validToken = await linkedinService.refreshTokenIfNeeded(tokenDoc);
+          accessToken = validToken.accessToken;
+        } else {
+          accessToken = tokenDoc.accessToken;
+        }
       }
     }
 
-    // 2. Fall back to .env token
     if (!accessToken) {
       accessToken = process.env.LINKEDIN_ACCESS_TOKEN;
     }
@@ -221,12 +345,14 @@ exports.publishToLinkedIn = async (req, res) => {
     }
     post.linkedinUrn = result.id;
     post.linkedinStatus = 'published';
-    await post.save();
+    if (!useMockStore && post.save) {
+      await post.save();
+    }
 
+    logger.info('Post published to LinkedIn successfully', { postId: id, linkedinUrn: result.id });
     res.json({ message: 'Published to LinkedIn', linkedinUrn: result.id });
   } catch (err) {
-    console.error('LinkedIn publish error:', err);
+    logger.error('LinkedIn publish error', { error: err.message });
     res.status(500).json({ message: 'Failed to publish to LinkedIn', error: err.message });
   }
 };
-
